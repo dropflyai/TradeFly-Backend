@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  tradefly-backend:
+    build: .
+    container_name: tradefly-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Load from .env file
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - USE_YAHOO_FINANCE=${USE_YAHOO_FINANCE:-true}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SIGNAL_CHECK_INTERVAL=${SIGNAL_CHECK_INTERVAL:-60}
+      - TICKERS_TO_WATCH=${TICKERS_TO_WATCH:-NVDA,TSLA,AAPL,AMD,MSFT,GOOGL,AMZN,META}
+    volumes:
+      # Mount .env file for easier updates
+      - ./.env:/app/.env:ro
+    networks:
+      - tradefly-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  tradefly-network:
+    driver: bridge

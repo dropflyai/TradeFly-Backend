@@ -1,0 +1,71 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          # Create SSH key file
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+
+          # Add EC2 to known hosts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          # Deploy via SSH
+          ssh -i private_key.pem $USER@$HOST << 'ENDSSH'
+            set -e
+
+            echo "📥 Pulling latest code..."
+            cd ~/TradeFly-Backend || {
+              echo "❌ TradeFly-Backend directory not found. Cloning..."
+              cd ~
+              git clone https://github.com/dropflyai/TradeFly-Backend.git
+              cd TradeFly-Backend
+            }
+
+            # Pull latest changes
+            git pull origin main
+
+            echo "🛑 Stopping existing containers..."
+            docker-compose down || true
+
+            echo "🔨 Building new image..."
+            docker-compose build --no-cache
+
+            echo "▶️  Starting containers..."
+            docker-compose up -d
+
+            echo "⏳ Waiting for health check..."
+            sleep 15
+
+            # Check if container is running
+            if docker ps | grep -q tradefly-backend; then
+              echo "✅ Deployment successful!"
+              docker-compose ps
+              docker-compose logs --tail=20
+            else
+              echo "❌ Deployment failed!"
+              docker-compose logs --tail=50
+              exit 1
+            fi
+          ENDSSH
+
+          # Cleanup
+          rm -f private_key.pem
+
+          echo "🎉 Deployment complete!"
