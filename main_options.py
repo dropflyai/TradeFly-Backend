@@ -663,6 +663,69 @@ async def get_closed_trades(limit: int = 50):
     }
 
 
+@app.post("/api/paper/quick-add-signal")
+async def quick_add_signal_to_paper_trading(signal: OptionsSignal):
+    """
+    Quick-add a signal to paper trading (one-click from signal card)
+
+    Args:
+        signal: Complete OptionsSignal object from frontend
+
+    Returns:
+        Created trade details
+    """
+    if not paper_trading:
+        raise HTTPException(status_code=503, detail="Paper trading not initialized")
+
+    try:
+        # Check if already in paper trading
+        existing = next(
+            (t for t in paper_trading.trades if t.signal_id == signal.signal_id),
+            None
+        )
+
+        if existing:
+            # Return existing trade
+            return {
+                "status": "already_exists",
+                "message": "Signal already in paper trading",
+                "trade": {
+                    "signal_id": existing.signal_id,
+                    "symbol": existing.symbol,
+                    "strategy": existing.strategy,
+                    "entry_price": existing.entry_price,
+                    "outcome": existing.outcome.value
+                }
+            }
+
+        # Add to paper trading
+        trade = paper_trading.add_signal(signal)
+
+        logger.info(f"Quick-added signal {signal.signal_id} to paper trading: {signal.symbol} @ ${signal.suggested_entry}")
+
+        return {
+            "status": "added",
+            "message": f"Added {signal.symbol} to paper trading",
+            "trade": {
+                "signal_id": trade.signal_id,
+                "symbol": trade.symbol,
+                "strategy": trade.strategy,
+                "action": trade.action,
+                "entry_price": trade.entry_price,
+                "target_price": trade.target_price,
+                "stop_loss": trade.stop_loss,
+                "strike": trade.strike,
+                "option_type": trade.option_type,
+                "expiration": trade.expiration,
+                "confidence": trade.original_confidence
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error quick-adding signal to paper trading: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # BACKTESTING ENDPOINTS - Test Strategies Before Using Them
 # ============================================================================
