@@ -22,6 +22,7 @@ from market_data_polygon import PolygonMarketDataService
 from paper_trading import PaperTradingEngine, TradeOutcome
 from backtest_engine import BacktestEngine
 from position_tracker import PositionTracker, ExitSignal, ExitReason
+from market_hours import MarketHours
 
 # Load environment variables
 load_dotenv()
@@ -155,6 +156,17 @@ async def health_check():
             "signal_detector": signal_detector is not None
         }
     }
+
+
+@app.get("/api/market/status")
+async def get_market_status():
+    """
+    Get live market status and trading hours
+
+    Returns:
+        Market status with current time, session info, and trading hours
+    """
+    return MarketHours.get_market_status()
 
 
 @app.get("/api/options/signals", response_model=List[OptionsSignal])

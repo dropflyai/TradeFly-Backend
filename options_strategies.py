@@ -69,16 +69,17 @@ class ScalpingStrategy:
             logger.debug(f"{contract.symbol}: Volume too low {contract.volume_metrics.volume}")
             return None
 
-        # FILTER 3: Affordable options - Slightly ITM to slightly OTM
-        # Delta 0.30-0.75 = slightly out-of-money to slightly in-the-money (affordable range)
+        # FILTER 3: Delta range - RELAXED for after-hours study mode
+        # Accept wider range (0.20-0.95) to track more potential plays
         delta = abs(contract.greeks.delta)
-        if not (0.30 <= delta <= 0.75):  # Slightly OTM to slightly ITM
-            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.30-0.75 for slightly ITM/OTM)")
+        if not (0.20 <= delta <= 0.95):  # Very wide range for study mode
+            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.20-0.95)")
             return None
 
-        # FILTER 3B: Price affordability - only contracts under $10/share ($1000/contract)
-        if contract.pricing.ask > 10.0:  # More than $10 per share = too expensive
-            logger.debug(f"{contract.symbol}: Too expensive ${contract.pricing.ask:.2f}/share (want under $10)")
+        # FILTER 3B: Price affordability - RELAXED for study mode
+        # Allow up to $50/share to track more expensive stocks (NVDA, TSLA, etc.)
+        if contract.pricing.ask > 50.0:  # Raised from $10 to track high-value stocks
+            logger.debug(f"{contract.symbol}: Too expensive ${contract.pricing.ask:.2f}/share (want under $50)")
             return None
 
         # FILTER 4: Momentum calculation
@@ -89,16 +90,16 @@ class ScalpingStrategy:
         price_momentum_1m = ta.momentum(price_history_1m, period=1)
         price_momentum_5m = ta.momentum(price_history_1m, period=5) if len(price_history_1m) >= 6 else 0
 
-        # Lowered significantly to match quiet market conditions
-        if abs(price_momentum_1m) < 0.0001 and abs(price_momentum_5m) < 0.0001:  # 0.01% - very low for quiet periods
-            logger.debug(f"{contract.symbol}: Insufficient momentum {price_momentum_1m:.2%}")
-            return None
+        # STUDY MODE: Accept ANY momentum to track all live data
+        # In production, you'd want stricter filters, but for development we want to see what's happening
+        momentum = price_momentum_1m if abs(price_momentum_1m) > abs(price_momentum_5m) else price_momentum_5m
 
-        # === IMPROVED QUALITY FILTERS (strict checks to avoid bad trades) ===
-        passes_filters, failure_reasons = ImprovedFilters.apply_all_filters(contract, price_momentum_1m)
-        if not passes_filters:
-            logger.debug(f"{contract.symbol}: REJECTED by quality filters: {', '.join(failure_reasons)}")
-            return None
+        # === IMPROVED QUALITY FILTERS - DISABLED FOR STUDY MODE ===
+        # In production, enable these for stricter quality control
+        # passes_filters, failure_reasons = ImprovedFilters.apply_all_filters(contract, price_momentum_1m)
+        # if not passes_filters:
+        #     logger.debug(f"{contract.symbol}: REJECTED by quality filters: {', '.join(failure_reasons)}")
+        #     return None
 
         # FILTER 5: RSI for entry timing
         rsi = ta.rsi(price_history_1m, period=14)
