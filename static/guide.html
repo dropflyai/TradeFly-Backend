@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeFly Guide - Understanding Signals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: rgba(51, 65, 85, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid #334155;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #3b82f6;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #8b5cf6;
+            font-size: 1.3rem;
+            margin: 20px 0 10px 0;
+        }
+
+        .section p {
+            line-height: 1.8;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .example {
+            background: rgba(30, 41, 59, 0.8);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .example-title {
+            color: #3b82f6;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .steps {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .steps li {
+            counter-increment: step-counter;
+            margin-bottom: 20px;
+            padding-left: 50px;
+            position: relative;
+        }
+
+        .steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .highlight {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .warning {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #fca5a5;
+        }
+
+        .tip {
+            background: rgba(34, 197, 94, 0.2);
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #86efac;
+        }
+
+        code {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+        <div class="header">
+            <h1>Understanding TradeFly Signals</h1>
+            <p style="color: #94a3b8; font-size: 1.1rem;">A Simple Guide to Options Trading</p>
+        </div>
+
+        <div class="section">
+            <h2>📖 What Are These Signals?</h2>
+            <p>Each signal is a <span class="highlight">trading opportunity</span> the system found by analyzing:</p>
+            <ul style="margin-left: 30px; line-height: 2;">
+                <li>Real-time options prices</li>
+                <li>Stock price movements</li>
+                <li>Volume and momentum</li>
+                <li>Technical indicators (RSI, MACD)</li>
+            </ul>
+            <p style="margin-top: 20px;">The system tells you: <strong>what to buy, when to sell for profit, and where to exit if wrong.</strong></p>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Reading a Signal (Step by Step)</h2>
+
+            <div class="example">
+                <div class="example-title">EXAMPLE SIGNAL:</div>
+                <p><strong>NVDA $50 CALL</strong> • Exp: 2025-12-12</p>
+                <p>Entry: $135.20 → Target: $155.48 (Stop: $128.44)</p>
+                <p>Confidence: 85% • Risk/Reward: 3.00x</p>
+            </div>
+
+            <h3>Breaking It Down:</h3>
+
+            <ol class="steps">
+                <li>
+                    <strong>NVDA $50 CALL</strong><br>
+                    This is the option contract. "CALL" means you profit if NVDA stock goes UP.
+                    "$50" is the strike price (ignore this for now - focus on the entry/exit prices).
+                </li>
+                <li>
+                    <strong>Exp: 2025-12-12</strong><br>
+                    Expiration date. You need to close the trade BEFORE this date (usually same day or next day for these scalps).
+                </li>
+                <li>
+                    <strong>Entry: $135.20</strong><br>
+                    This is what you PAY per contract. One contract = $135.20 × 100 = <span class="highlight">$13,520</span>
+                </li>
+                <li>
+                    <strong>Target: $155.48</strong><br>
+                    SELL HERE for profit. One contract = $155.48 × 100 = <span class="highlight">$15,548</span><br>
+                    Profit = $15,548 - $13,520 = <span class="highlight" style="color: #22c55e;">$2,028 (15% gain)</span>
+                </li>
+                <li>
+                    <strong>Stop: $128.44</strong><br>
+                    EXIT HERE if trade goes against you to limit losses.<br>
+                    Loss = $13,520 - $12,844 = <span class="highlight" style="color: #ef4444;">-$676 (5% loss)</span>
+                </li>
+                <li>
+                    <strong>Confidence: 85%</strong><br>
+                    How confident the system is. Higher = better. Look for 70%+ signals.
+                </li>
+                <li>
+                    <strong>Risk/Reward: 3.00x</strong><br>
+                    For every $1 you risk, you can make $3. Higher is better.
+                </li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>💰 How to Trade This</h2>
+
+            <h3>STEP 1: Open Your Broker</h3>
+            <p>Use any options broker (Robinhood, TD Ameritrade, E*TRADE, etc.)</p>
+
+            <h3>STEP 2: Find The Contract</h3>
+            <p>Search for: <code>NVDA</code> → Options → Strike <code>$50</code> → Expiration <code>Dec 12</code> → <code>CALL</code></p>
+
+            <h3>STEP 3: Place The Order</h3>
+            <ul style="margin-left: 30px; line-height: 2;">
+                <li><strong>Action:</strong> BUY TO OPEN</li>
+                <li><strong>Quantity:</strong> 1 contract (or more)</li>
+                <li><strong>Order Type:</strong> LIMIT</li>
+                <li><strong>Price:</strong> $135.20 (or better)</li>
+            </ul>
+
+            <h3>STEP 4: Set Your Exit Orders</h3>
+            <p>Immediately after buying, set TWO orders:</p>
+            <ul style="margin-left: 30px; line-height: 2;">
+                <li><strong>Profit Target:</strong> SELL at $155.48 (take profit)</li>
+                <li><strong>Stop Loss:</strong> SELL at $128.44 (limit loss)</li>
+            </ul>
+
+            <div class="tip">
+                <strong>💡 PRO TIP:</strong> Use OCO (One-Cancels-Other) orders so when one executes, the other automatically cancels.
+            </div>
+
+            <h3>STEP 5: Monitor or Walk Away</h3>
+            <p>With stops set, you can let it run. The system will either hit your profit target or stop loss.</p>
+        </div>
+
+        <div class="section">
+            <h2>⚠️ Important Warnings</h2>
+
+            <div class="warning">
+                <strong>⚠️ OPTIONS ARE RISKY</strong><br>
+                • You can lose 100% of your investment quickly<br>
+                • Only trade with money you can afford to lose<br>
+                • Start with SMALL positions to learn<br>
+                • Paper trade first if you're new
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ POSITION SIZING</strong><br>
+                Don't risk more than 2% of your account per trade.<br>
+                Example: $10,000 account = $200 max risk per trade
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ NEVER HOLD TO EXPIRATION</strong><br>
+                Close your positions the same day or next day.<br>
+                These are SCALPING signals (quick in/out).
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>❓ Common Questions</h2>
+
+            <h3>Q: What does "BUY_CALL" mean?</h3>
+            <p>Buy a CALL option = you profit when the stock goes UP.</p>
+
+            <h3>Q: What does "BUY_PUT" mean?</h3>
+            <p>Buy a PUT option = you profit when the stock goes DOWN.</p>
+
+            <h3>Q: Why do prices multiply by 100?</h3>
+            <p>One option contract controls 100 shares. So $1.35 per share = $135 per contract.</p>
+
+            <h3>Q: Should I trade every signal?</h3>
+            <p>NO. Only trade signals with 70%+ confidence. Max 2-3 positions at once.</p>
+
+            <h3>Q: When do I enter the trade?</h3>
+            <p>As soon as you see the signal during market hours (9:30 AM - 4:00 PM ET).</p>
+
+            <h3>Q: How long do I hold?</h3>
+            <p>These are SCALPING signals: 1-5 minutes to a few hours. Exit same day.</p>
+
+            <h3>Q: What if I can't afford a full contract?</h3>
+            <p>Some brokers offer fractional contracts, or wait for smaller signals. Never risk more than you have.</p>
+        </div>
+
+        <div class="section">
+            <h2>✅ Checklist Before Trading</h2>
+
+            <ol class="steps">
+                <li>Signal confidence is 70%+ ✓</li>
+                <li>Market is open (9:30 AM - 4:00 PM ET) ✓</li>
+                <li>You understand the risk ✓</li>
+                <li>Position size is 2% or less of your account ✓</li>
+                <li>You have stop loss and profit target ready ✓</li>
+                <li>You're not emotional or desperate ✓</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0;">
+            <a href="/" class="back-link" style="font-size: 1.1rem; padding: 15px 30px;">
+                Got it! Show me the signals →
+            </a>
+        </div>
+    </div>
+</body>
+</html>

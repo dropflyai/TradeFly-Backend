@@ -36,38 +36,52 @@ class PolygonMarketDataService:
             MarketData object with latest price and indicators
         """
         try:
-            # Get latest quote for current price
-            quote_url = f"{self.base_url}/v2/last/trade/{ticker}"
-            quote_params = {"apiKey": self.api_key}
+            # Get current price from options snapshot (Options Advanced doesn't include stock trades)
+            snapshot_url = f"{self.base_url}/v3/snapshot/options/{ticker}"
+            snapshot_params = {"apiKey": self.api_key, "limit": 1}
 
-            quote_response = requests.get(quote_url, params=quote_params, timeout=10)
-            quote_response.raise_for_status()
-            quote_data = quote_response.json()
+            snapshot_response = requests.get(snapshot_url, params=snapshot_params, timeout=10)
+            snapshot_response.raise_for_status()
+            snapshot_data = snapshot_response.json()
 
-            if quote_data.get("status") != "OK":
-                logger.warning(f"No quote data for {ticker}: {quote_data.get('status')}")
+            if snapshot_data.get("status") != "OK" or not snapshot_data.get("results"):
+                logger.warning(f"No options data for {ticker}")
                 return None
 
-            current_price = quote_data["results"]["p"]  # Latest trade price
+            # Extract underlying price from first contract
+            first_contract = snapshot_data["results"][0]
+            underlying = first_contract.get("underlying_asset", {})
+            current_price = underlying.get("price")
 
-            # Get aggregates (bars) for indicators - last 100 1-minute bars
-            end_date = datetime.now()
-            start_date = end_date - timedelta(hours=3)
+            if not current_price:
+                logger.warning(f"No underlying price found for {ticker}")
+                return None
 
-            aggs_url = f"{self.base_url}/v2/aggs/ticker/{ticker}/range/1/minute/{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
-            aggs_params = {
-                "apiKey": self.api_key,
-                "adjusted": "true",
-                "sort": "asc",
-                "limit": 100
-            }
+            current_price = float(current_price)
 
-            aggs_response = requests.get(aggs_url, params=aggs_params, timeout=10)
-            aggs_response.raise_for_status()
-            aggs_data = aggs_response.json()
+            # Try to get aggregates (bars) for indicators
+            # NOTE: Options Advanced doesn't include intraday aggregates
+            # We'll fall back to basic data if not available
+            try:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(hours=3)
 
-            if aggs_data.get("resultsCount", 0) == 0:
-                logger.warning(f"No aggregate data for {ticker}")
+                aggs_url = f"{self.base_url}/v2/aggs/ticker/{ticker}/range/1/minute/{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
+                aggs_params = {
+                    "apiKey": self.api_key,
+                    "adjusted": "true",
+                    "sort": "asc",
+                    "limit": 100
+                }
+
+                aggs_response = requests.get(aggs_url, params=aggs_params, timeout=10)
+                aggs_response.raise_for_status()
+                aggs_data = aggs_response.json()
+
+                if aggs_data.get("resultsCount", 0) == 0 or aggs_data.get("status") == "NOT_AUTHORIZED":
+                    raise Exception("No aggregates available")
+            except Exception as e:
+                logger.info(f"Aggregates not available for {ticker} (Options Advanced limitation), using basic data")
                 # Return basic data without indicators
                 return MarketData(
                     ticker=ticker,
