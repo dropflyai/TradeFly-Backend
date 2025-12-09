@@ -169,6 +169,84 @@ async def get_market_status():
     return MarketHours.get_market_status()
 
 
+@app.get("/api/market/price-history")
+async def get_price_history(
+    symbol: str,
+    timeframe: str = "1Day",
+    days: int = 30
+):
+    """
+    Get historical price data for charting
+
+    Args:
+        symbol: Stock symbol (e.g., "NVDA")
+        timeframe: Timeframe for bars (1Min, 5Min, 15Min, 1Hour, 1Day)
+        days: Number of days of history to fetch
+
+    Returns:
+        List of price bars with OHLCV data
+    """
+    if not data_provider:
+        raise HTTPException(status_code=503, detail="Data provider not initialized")
+
+    try:
+        from datetime import datetime, timedelta
+
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Map timeframe to API format
+        timeframe_map = {
+            "1Min": "minute",
+            "5Min": "minute",
+            "15Min": "minute",
+            "1Hour": "hour",
+            "1Day": "day"
+        }
+
+        multiplier_map = {
+            "1Min": 1,
+            "5Min": 5,
+            "15Min": 15,
+            "1Hour": 1,
+            "1Day": 1
+        }
+
+        tf_type = timeframe_map.get(timeframe, "day")
+        multiplier = multiplier_map.get(timeframe, 1)
+
+        # Fetch aggregates from Polygon
+        bars = data_provider.get_aggregates(
+            symbol=symbol,
+            multiplier=multiplier,
+            timespan=tf_type,
+            from_date=start_date.strftime("%Y-%m-%d"),
+            to_date=end_date.strftime("%Y-%m-%d")
+        )
+
+        if not bars:
+            return []
+
+        # Transform to chart format
+        chart_data = []
+        for bar in bars:
+            chart_data.append({
+                "time": int(bar.timestamp / 1000),  # Convert to seconds for TradingView
+                "open": bar.open,
+                "high": bar.high,
+                "low": bar.low,
+                "close": bar.close,
+                "volume": bar.volume
+            })
+
+        return chart_data
+
+    except Exception as e:
+        logger.error(f"Error fetching price history for {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching price history: {str(e)}")
+
+
 @app.get("/api/options/signals", response_model=List[OptionsSignal])
 async def get_signals(
     symbols: Optional[str] = None,

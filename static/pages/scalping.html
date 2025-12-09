@@ -154,6 +154,74 @@ const ScalpingPage = {
                 btn.addEventListener('click', () => this.quickAddToPaper(signal));
             }
         });
+
+        // Initialize mini charts for each signal
+        signals.forEach(signal => {
+            this.loadMiniChart(signal);
+        });
+    },
+
+    async loadMiniChart(signal) {
+        const chartId = `chart-${signal.signal_id}`;
+        const container = document.getElementById(chartId);
+
+        if (!container) {
+            console.warn(`Chart container ${chartId} not found`);
+            return;
+        }
+
+        try {
+            // Fetch price data for the symbol
+            const priceData = await TradeFlyCharts.fetchPriceData(signal.symbol, '1Day', 30);
+
+            if (!priceData || priceData.length === 0) {
+                // Use demo data if real data not available
+                console.log(`Using demo data for ${signal.symbol}`);
+                const demoData = TradeFlyCharts.generateDemoData(signal.contract?.underlying_price || 100, 30);
+
+                const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
+                    width: container.clientWidth,
+                    height: 150
+                });
+
+                if (chart) {
+                    chart.updateData(demoData.candleData);
+                }
+                return;
+            }
+
+            // Create chart with real data
+            const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
+                width: container.clientWidth,
+                height: 150
+            });
+
+            if (chart) {
+                // Transform and load data
+                const { candleData } = TradeFlyCharts.transformPriceData(priceData);
+                chart.updateData(candleData);
+
+                // Add entry/target/stop price lines
+                if (signal.contract?.underlying_price) {
+                    const currentPrice = signal.contract.underlying_price;
+                    // These are visual markers, not functional price lines
+                    // Price lines would need to be added to the chart instance
+                }
+            }
+        } catch (error) {
+            console.error(`Error loading chart for ${signal.symbol}:`, error);
+
+            // Fallback to demo data
+            const demoData = TradeFlyCharts.generateDemoData(signal.contract?.underlying_price || 100, 30);
+            const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
+                width: container.clientWidth,
+                height: 150
+            });
+
+            if (chart) {
+                chart.updateData(demoData.candleData);
+            }
+        }
     },
 
     renderSignalCard(signal) {
@@ -180,6 +248,11 @@ const ScalpingPage = {
                             ${(signal.confidence * 100).toFixed(0)}% Confidence
                         </div>
                     </div>
+                </div>
+
+                <!-- Mini Price Chart -->
+                <div style="margin: 1rem 0; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem;">
+                    <div id="chart-${signal.signal_id}" style="width: 100%; height: 150px;"></div>
                 </div>
 
                 <div class="signal-details">
