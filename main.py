@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Auto-detect market data provider
 if settings.polygon_api_key and not settings.use_yahoo_finance:
     from market_data_polygon import PolygonMarketDataService
-    logger.info("📊 Using Polygon.io (Real-time accurate data)")
+    logger.info("📊 Using Massive (Real-time accurate data)")
     market_service = PolygonMarketDataService(settings.polygon_api_key)
 elif settings.use_yahoo_finance:
     from market_data_yahoo import YahooMarketDataService

@@ -1,5 +1,5 @@
 """
-Polygon.io Market Data Provider
+Massive Market Data Provider (formerly Polygon.io)
 Real-time and accurate market data with professional-grade quality
 """
 import logging
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class PolygonMarketDataService:
     """
-    Professional market data from Polygon.io
+    Professional market data from Massive (formerly Polygon.io)
     - Real-time quotes
     - Accurate pricing
     - High-quality historical data
@@ -22,8 +22,8 @@ class PolygonMarketDataService:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.polygon.io"
-        logger.info("Polygon.io data service initialized")
+        self.base_url = "https://api.massive.com"
+        logger.info("Massive data service initialized (formerly Polygon.io)")
 
     def get_latest_data(self, ticker: str) -> Optional[MarketData]:
         """
@@ -126,10 +126,10 @@ class PolygonMarketDataService:
             )
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network error fetching Polygon data for {ticker}: {e}")
+            logger.error(f"Network error fetching Massive data for {ticker}: {e}")
             return None
         except Exception as e:
-            logger.error(f"Error fetching Polygon data for {ticker}: {e}")
+            logger.error(f"Error fetching Massive data for {ticker}: {e}")
             return None
 
     def get_average_volume(self, ticker: str, periods: int = 20) -> int:
