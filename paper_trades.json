@@ -1,11 +1,11 @@
 [
   {
-    "signal_id": "SCALPING_RIVN_20251209_150408",
+    "signal_id": "SCALPING_RIVN_20251209_153408",
     "symbol": "RIVN",
     "strategy": "SCALPING",
     "action": "BUY_CALL",
     "entry_price": 13.1,
-    "entry_time": "2025-12-09T15:04:08.153872",
+    "entry_time": "2025-12-09T15:34:08.165998",
     "target_price": 15.064999999999998,
     "stop_loss": 12.444999999999999,
     "strike": 5.0,
