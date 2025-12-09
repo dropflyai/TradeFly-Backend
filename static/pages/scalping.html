@@ -71,13 +71,41 @@ const ScalpingPage = {
     async loadSignals() {
         try {
             const response = await fetch(`/api/options/signals?strategy=SCALPING&min_confidence=${this.minConfidence}&max_results=20`);
-            const signals = await response.json();
+            const rawSignals = await response.json();
+
+            // Transform API response to flatten nested structure
+            const signals = rawSignals.map(s => ({
+                ...s,
+                symbol: s.contract?.symbol || 'N/A',
+                strike: s.contract?.strike || 0,
+                suggested_entry: s.entry_price || 0,
+                delta: s.contract?.greeks?.delta || 0,
+                iv_rank: s.contract?.iv_metrics?.iv_rank || 0,
+                dte: this.calculateDTE(s.contract?.expiration),
+                target_profit_percent: this.calculateProfitPercent(s.entry_price, s.target_price),
+                stop_loss_percent: this.calculateProfitPercent(s.entry_price, s.stop_loss)
+            }));
+
             this.signals = signals;
             this.renderSignals(signals);
         } catch (error) {
             console.error('Error loading signals:', error);
             document.getElementById('scalp-signals-container').innerHTML = '<div class="empty-state">Error loading signals</div>';
         }
+    },
+
+    calculateDTE(expirationDate) {
+        if (!expirationDate) return 0;
+        const expiry = new Date(expirationDate);
+        const now = new Date();
+        const diffTime = Math.abs(expiry - now);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    },
+
+    calculateProfitPercent(entry, target) {
+        if (!entry || entry === 0) return 0;
+        return ((target - entry) / entry) * 100;
     },
 
     async loadStats() {
