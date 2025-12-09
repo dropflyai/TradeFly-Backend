@@ -1,0 +1,149 @@
+<div class="page-header">
+    <h1 class="page-title">🔍 Watchlist & Analysis</h1>
+    <p class="page-subtitle">Monitor symbols and analyze opportunities</p>
+</div>
+
+<!-- Watchlist -->
+<div class="card mb-3">
+    <div class="card-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📋 Active Watchlist</span>
+            <button class="btn btn-primary btn-sm" onclick="alert('Custom watchlist coming soon!')">
+                ➕ Add Symbol
+            </button>
+        </div>
+    </div>
+    <div id="watchlist-symbols">
+        <div class="loading" style="padding: 2rem;">Loading watchlist...</div>
+    </div>
+</div>
+
+<!-- Symbol Analysis -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">🔥 Top Movers</div>
+        <div id="top-movers">
+            <div class="empty-state" style="padding: 2rem;">
+                <p class="text-muted">Market data analysis coming soon</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">📈 High IV Rank</div>
+        <div id="high-iv">
+            <div class="empty-state" style="padding: 2rem;">
+                <p class="text-muted">IV analysis coming soon</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Chat Widget (Placeholder) -->
+<div class="card" style="border: 2px dashed var(--border-color);">
+    <div class="card-header">🤖 AI Trading Assistant (Coming Soon)</div>
+    <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+        <p style="font-size: 2rem; margin-bottom: 1rem;">💬</p>
+        <p>AI chatbot for instant options analysis</p>
+        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Ask about any stock, get real-time ratings and trade ideas</p>
+        <button class="btn btn-primary mt-2" onclick="alert('AI chatbot integration coming soon!')">
+            Enable AI Assistant
+        </button>
+    </div>
+</div>
+
+<script>
+const WatchlistPage = {
+    watchlist: ['NVDA', 'TSLA', 'AAPL', 'AMD', 'MSFT', 'META', 'GOOGL', 'AMZN'],
+
+    async init() {
+        console.log('Initializing Watchlist page');
+
+        await this.loadWatchlist();
+
+        // Auto-refresh every 60 seconds
+        setInterval(() => this.loadWatchlist(), 60000);
+    },
+
+    async loadWatchlist() {
+        try {
+            // Get signals for watchlist symbols
+            const symbolsParam = this.watchlist.join(',');
+            const response = await fetch(`/api/options/signals?symbols=${symbolsParam}&min_confidence=0.75&max_results=50`);
+            const signals = await response.json();
+
+            this.renderWatchlist(signals);
+        } catch (error) {
+            console.error('Error loading watchlist:', error);
+        }
+    },
+
+    renderWatchlist(signals) {
+        const container = document.getElementById('watchlist-symbols');
+
+        if (!signals || signals.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                    <p>No signals found for watchlist symbols</p>
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem;">Current watchlist: ${this.watchlist.join(', ')}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by symbol
+        const bySymbol = {};
+        signals.forEach(sig => {
+            if (!bySymbol[sig.symbol]) {
+                bySymbol[sig.symbol] = [];
+            }
+            bySymbol[sig.symbol].push(sig);
+        });
+
+        container.innerHTML = Object.entries(bySymbol).map(([symbol, sigs]) => {
+            const bestSignal = sigs.reduce((best, curr) =>
+                curr.confidence > best.confidence ? curr : best
+            );
+
+            const signalCount = sigs.length;
+            const avgConfidence = sigs.reduce((sum, s) => sum + s.confidence, 0) / signalCount;
+
+            return `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 1.25rem;">${symbol}</strong>
+                                <span class="badge badge-info">${signalCount} signal${signalCount > 1 ? 's' : ''}</span>
+                                <span class="badge badge-${avgConfidence >= 0.85 ? 'success' : 'warning'}">
+                                    ${(avgConfidence * 100).toFixed(0)}% avg confidence
+                                </span>
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                                Best: ${bestSignal.action} ${bestSignal.strike} ${bestSignal.option_type.toUpperCase()}
+                                @ $${bestSignal.suggested_entry.toFixed(2)}
+                                (${(bestSignal.confidence * 100).toFixed(0)}% confidence)
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" onclick="WatchlistPage.viewSignals('${symbol}')">
+                                View Signals
+                            </button>
+                            <button class="btn btn-sm" onclick="alert('AI analysis for ${symbol} coming soon!')">
+                                🤖 Analyze
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    viewSignals(symbol) {
+        // Navigate to scalping or swing page filtered by symbol
+        alert(`Viewing signals for ${symbol}.\n\nFull symbol filtering coming soon!\nFor now, check the Scalping or Swing pages.`);
+    }
+};
+
+WatchlistPage.init();
+</script>

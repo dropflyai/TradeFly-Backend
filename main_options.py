@@ -663,6 +663,93 @@ async def get_closed_trades(limit: int = 50):
     }
 
 
+@app.get("/api/training/stats")
+async def get_training_data_stats():
+    """
+    Get AI training data statistics and insights
+
+    Returns:
+        Overall stats, strategy performance, AI insights
+    """
+    try:
+        from training_data import training_data_manager
+
+        stats = training_data_manager.get_stats_summary()
+
+        # Add more detailed stats
+        all_outcomes = training_data_manager.get_all_outcomes()
+        completed = [o for o in all_outcomes if o.outcome]
+
+        if completed:
+            wins = [o for o in completed if o.outcome == 'win']
+            losses = [o for o in completed if o.outcome == 'loss']
+
+            stats['avg_profit_percent'] = sum(o.profit_loss_percent for o in wins) / len(wins) if wins else 0
+            stats['avg_loss_percent'] = sum(o.profit_loss_percent for o in losses) / len(losses) if losses else 0
+            stats['profit_factor'] = abs(sum(o.profit_loss_percent for o in wins) / sum(o.profit_loss_percent for o in losses)) if losses and sum(o.profit_loss_percent for o in losses) != 0 else 0
+
+        return stats
+
+    except Exception as e:
+        logger.error(f"Error getting training stats: {e}")
+        # Return empty stats if training data not available
+        return {
+            'total_outcomes': 0,
+            'completed': 0,
+            'pending': 0,
+            'win_rate': 0.0,
+            'total_wins': 0,
+            'total_losses': 0,
+            'strategies': {},
+            'avg_profit_percent': 0,
+            'avg_loss_percent': 0,
+            'profit_factor': 0
+        }
+
+
+@app.get("/api/training/recent-outcomes")
+async def get_recent_training_outcomes(limit: int = 10):
+    """
+    Get recent training data outcomes
+
+    Args:
+        limit: Number of outcomes to return
+
+    Returns:
+        List of recent SignalOutcome objects
+    """
+    try:
+        from training_data import training_data_manager
+
+        outcomes = training_data_manager.get_all_outcomes(limit=limit)
+
+        # Convert to dict format for JSON serialization
+        return [
+            {
+                'signal_id': o.signal_id,
+                'timestamp': o.timestamp.isoformat(),
+                'symbol': o.symbol,
+                'strategy': o.strategy.value,
+                'confidence': o.confidence,
+                'action': o.action.value,
+                'entry_price': o.entry_price,
+                'exit_price': o.exit_price,
+                'profit_loss_percent': o.profit_loss_percent,
+                'hold_duration_minutes': o.hold_duration_minutes,
+                'exit_reason': o.exit_reason,
+                'outcome': o.outcome,
+                'rsi_14': o.rsi_14,
+                'delta': o.delta,
+                'iv_rank': o.iv_rank
+            }
+            for o in outcomes
+        ]
+
+    except Exception as e:
+        logger.error(f"Error getting recent outcomes: {e}")
+        return []
+
+
 @app.post("/api/paper/quick-add-signal")
 async def quick_add_signal_to_paper_trading(signal: OptionsSignal):
     """

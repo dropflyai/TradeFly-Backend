@@ -1,0 +1,352 @@
+<div class="page-header">
+    <h1 class="page-title">👁️ Performance Monitor</h1>
+    <p class="page-subtitle">Track open positions with real-time exit signals</p>
+</div>
+
+<!-- Overall Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-value" id="monitor-open-count">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total P/L</div>
+        <div class="stat-value" id="monitor-total-pnl">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value stat-up" id="monitor-win-rate">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Alerts</div>
+        <div class="stat-value" id="monitor-alerts-count">-</div>
+    </div>
+</div>
+
+<!-- Tab Selection -->
+<div class="card mb-3">
+    <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-primary" id="tab-open" onclick="MonitorPage.switchTab('open')">
+            Open Positions
+        </button>
+        <button class="btn" id="tab-paper" onclick="MonitorPage.switchTab('paper')">
+            Paper Trading
+        </button>
+        <button class="btn" id="tab-exit-signals" onclick="MonitorPage.switchTab('exit-signals')">
+            Exit Signals
+        </button>
+    </div>
+</div>
+
+<!-- Positions Container -->
+<div id="monitor-positions-container">
+    <div class="loading">Loading positions...</div>
+</div>
+
+<script>
+const MonitorPage = {
+    currentTab: 'open',
+    positions: [],
+    paperTrades: [],
+
+    async init() {
+        console.log('Initializing Performance Monitor page');
+
+        await this.loadData();
+
+        // Auto-refresh every 10 seconds
+        setInterval(() => this.loadData(), 10000);
+    },
+
+    async loadData() {
+        try {
+            // Load position tracker stats
+            const statsResponse = await fetch('/api/positions/stats');
+            const stats = await statsResponse.json();
+
+            document.getElementById('monitor-open-count').textContent = stats.open_positions || 0;
+            document.getElementById('monitor-total-pnl').textContent =
+                `$${(stats.total_pnl || 0).toFixed(2)}`;
+            document.getElementById('monitor-total-pnl').className =
+                `stat-value ${stats.total_pnl >= 0 ? 'stat-up' : 'stat-down'}`;
+            document.getElementById('monitor-win-rate').textContent =
+                `${((stats.win_rate || 0) * 100).toFixed(1)}%`;
+
+            // Load paper trading data
+            const paperResponse = await fetch('/api/paper/open-trades');
+            const paperData = await paperResponse.json();
+            this.paperTrades = paperData.trades || [];
+
+            // Count exit signals with high urgency
+            const alertCount = this.paperTrades.filter(t =>
+                t.exit_signals && t.exit_signals.some(s => s.urgency === 'high')
+            ).length;
+            document.getElementById('monitor-alerts-count').textContent = alertCount;
+
+            // Render current tab
+            this.renderCurrentTab();
+        } catch (error) {
+            console.error('Error loading data:', error);
+        }
+    },
+
+    switchTab(tab) {
+        this.currentTab = tab;
+
+        // Update button states
+        ['open', 'paper', 'exit-signals'].forEach(t => {
+            const btn = document.getElementById(`tab-${t}`);
+            if (t === tab) {
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn');
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn');
+            }
+        });
+
+        this.renderCurrentTab();
+    },
+
+    renderCurrentTab() {
+        if (this.currentTab === 'paper') {
+            this.renderPaperTrades();
+        } else if (this.currentTab === 'exit-signals') {
+            this.renderExitSignals();
+        } else {
+            this.renderOpenPositions();
+        }
+    },
+
+    renderOpenPositions() {
+        const container = document.getElementById('monitor-positions-container');
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <p>Real position tracking coming soon</p>
+                <p class="text-muted">Use Paper Trading tab to track signals</p>
+            </div>
+        `;
+    },
+
+    renderPaperTrades() {
+        const container = document.getElementById('monitor-positions-container');
+
+        if (!this.paperTrades || this.paperTrades.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🧪</div>
+                    <p>No open paper trades</p>
+                    <p class="text-muted">Add signals from Scalping or Swing pages</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.paperTrades.map(trade => this.renderPaperTradeCard(trade)).join('');
+
+        // Attach close button listeners
+        this.paperTrades.forEach(trade => {
+            const closeBtn = document.getElementById(`close-${trade.signal_id}`);
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closePaperTrade(trade));
+            }
+        });
+    },
+
+    renderPaperTradeCard(trade) {
+        const pnlClass = trade.profit_loss_percent >= 0 ? 'text-success' : 'text-danger';
+        const pnlSign = trade.profit_loss_percent >= 0 ? '+' : '';
+
+        // Format exit signals
+        let exitSignalsHTML = '';
+        if (trade.exit_signals && trade.exit_signals.length > 0) {
+            exitSignalsHTML = `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <strong style="color: var(--warning-color);">⚠️ Exit Signals (${trade.exit_signals.length}):</strong>
+                    ${trade.exit_signals.map(sig => `
+                        <div class="badge badge-${sig.urgency === 'high' ? 'danger' : 'warning'}" style="margin-top: 0.5rem; display: block;">
+                            ${sig.message}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        const timeHeld = trade.entry_time ? this.calculateTimeHeld(trade.entry_time) : '-';
+
+        return `
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem;">${trade.symbol}</h3>
+                        <p class="text-muted" style="margin-top: 0.25rem;">${trade.strategy} • ${trade.action}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="${pnlClass}" style="font-size: 1.5rem; font-weight: bold;">
+                            ${pnlSign}${trade.profit_loss_percent.toFixed(1)}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.875rem;">
+                            ${pnlSign}$${trade.profit_loss.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="signal-details">
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Entry:</span>
+                        <span class="signal-detail-value">$${trade.entry_price.toFixed(2)}</span>
+                    </div>
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Current:</span>
+                        <span class="signal-detail-value">$${(trade.current_price || trade.entry_price).toFixed(2)}</span>
+                    </div>
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Target:</span>
+                        <span class="signal-detail-value text-success">$${trade.target_price.toFixed(2)}</span>
+                    </div>
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Stop:</span>
+                        <span class="signal-detail-value text-danger">$${trade.stop_loss.toFixed(2)}</span>
+                    </div>
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Strike:</span>
+                        <span class="signal-detail-value">$${trade.strike.toFixed(2)} ${trade.option_type.toUpperCase()}</span>
+                    </div>
+                    <div class="signal-detail">
+                        <span class="signal-detail-label">Time Held:</span>
+                        <span class="signal-detail-value">${timeHeld}</span>
+                    </div>
+                </div>
+
+                ${exitSignalsHTML}
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <button class="btn btn-danger btn-sm" id="close-${trade.signal_id}">
+                        Close Position
+                    </button>
+                    <button class="btn btn-sm" onclick="alert('Position details coming soon')">
+                        View Details
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    renderExitSignals() {
+        const container = document.getElementById('monitor-positions-container');
+
+        // Get all trades with exit signals
+        const tradesWithSignals = this.paperTrades.filter(t =>
+            t.exit_signals && t.exit_signals.length > 0
+        );
+
+        if (tradesWithSignals.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">✅</div>
+                    <p>No exit signals</p>
+                    <p class="text-muted">All positions are within safe ranges</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort by urgency (high first)
+        tradesWithSignals.sort((a, b) => {
+            const aHigh = a.exit_signals.some(s => s.urgency === 'high');
+            const bHigh = b.exit_signals.some(s => s.urgency === 'high');
+            if (aHigh && !bHigh) return -1;
+            if (!aHigh && bHigh) return 1;
+            return 0;
+        });
+
+        container.innerHTML = tradesWithSignals.map(trade => {
+            const pnlClass = trade.profit_loss_percent >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = trade.profit_loss_percent >= 0 ? '+' : '';
+
+            return `
+                <div class="card" style="border-left: 4px solid var(--warning-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem;">${trade.symbol}</h3>
+                            <p class="text-muted" style="margin: 0;">${trade.strategy}</p>
+                        </div>
+                        <div class="${pnlClass}" style="font-size: 1.25rem; font-weight: bold;">
+                            ${pnlSign}${trade.profit_loss_percent.toFixed(1)}%
+                        </div>
+                    </div>
+
+                    ${trade.exit_signals.map(sig => `
+                        <div class="badge badge-${sig.urgency === 'high' ? 'danger' : sig.urgency === 'medium' ? 'warning' : 'info'}"
+                             style="display: block; margin-bottom: 0.5rem; padding: 0.75rem;">
+                            <strong>${sig.urgency.toUpperCase()}:</strong> ${sig.message}
+                            <br>
+                            <span class="text-muted" style="font-size: 0.75rem;">
+                                Suggested Exit: $${sig.suggested_exit_price.toFixed(2)}
+                            </span>
+                        </div>
+                    `).join('')}
+
+                    <button class="btn btn-danger btn-sm mt-2" id="close-${trade.signal_id}">
+                        Close Position Now
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // Attach close listeners
+        tradesWithSignals.forEach(trade => {
+            const btn = document.getElementById(`close-${trade.signal_id}`);
+            if (btn) {
+                btn.addEventListener('click', () => this.closePaperTrade(trade));
+            }
+        });
+    },
+
+    async closePaperTrade(trade) {
+        const currentPrice = trade.current_price || trade.entry_price;
+
+        if (!confirm(`Close ${trade.symbol} at $${currentPrice.toFixed(2)}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/paper/close-trade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    signal_id: trade.signal_id,
+                    exit_price: currentPrice,
+                    reason: 'Manual close from monitor'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'closed') {
+                alert(`Closed ${trade.symbol}: ${result.trade.profit_loss_percent.toFixed(1)}% P/L`);
+                await this.loadData();
+            }
+        } catch (error) {
+            console.error('Error closing trade:', error);
+            alert('Error closing trade');
+        }
+    },
+
+    calculateTimeHeld(entryTime) {
+        const entry = new Date(entryTime);
+        const now = new Date();
+        const diffMs = now - entry;
+        const diffMins = Math.floor(diffMs / 60000);
+
+        if (diffMins < 60) return `${diffMins}m`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ${diffMins % 60}m`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays}d ${diffHours % 24}h`;
+    }
+};
+
+MonitorPage.init();
+</script>

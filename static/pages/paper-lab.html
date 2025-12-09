@@ -1,0 +1,292 @@
+<div class="page-header">
+    <h1 class="page-title">🧪 Paper Trading Lab</h1>
+    <p class="page-subtitle">AI Learning Dashboard • Training data outcomes and pattern analysis</p>
+</div>
+
+<!-- AI Learning Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">📊 Total Outcomes</div>
+        <div class="stat-value" id="lab-total-outcomes">-</div>
+        <div class="stat-change text-muted" id="lab-completed-rate">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">🎯 Overall Win Rate</div>
+        <div class="stat-value stat-up" id="lab-win-rate">-</div>
+        <div class="stat-change" id="lab-win-loss">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">📈 Avg Profit (Wins)</div>
+        <div class="stat-value text-success" id="lab-avg-profit">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">📉 Avg Loss (Losses)</div>
+        <div class="stat-value text-danger" id="lab-avg-loss">-</div>
+    </div>
+</div>
+
+<!-- Strategy Performance -->
+<div class="grid-2 mb-3">
+    <div class="card">
+        <div class="card-header">📊 Strategy Performance</div>
+        <div id="strategy-performance">
+            <div class="loading" style="padding: 2rem;">Loading strategy stats...</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">🧠 AI Insights</div>
+        <div id="ai-insights">
+            <div class="loading" style="padding: 2rem;">Analyzing patterns...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Outcomes -->
+<div class="card">
+    <div class="card-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📝 Recent Trade Outcomes</span>
+            <select id="outcome-filter" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
+                <option value="all">All Outcomes</option>
+                <option value="win">Wins Only</option>
+                <option value="loss">Losses Only</option>
+            </select>
+        </div>
+    </div>
+    <div id="recent-outcomes">
+        <div class="loading" style="padding: 2rem;">Loading outcomes...</div>
+    </div>
+</div>
+
+<script>
+const PaperLabPage = {
+    trainingData: null,
+
+    async init() {
+        console.log('Initializing Paper Trading Lab page');
+
+        document.getElementById('outcome-filter').addEventListener('change', (e) => {
+            this.filterOutcomes(e.target.value);
+        });
+
+        await this.loadTrainingData();
+
+        // Refresh every 30 seconds
+        setInterval(() => this.loadTrainingData(), 30000);
+    },
+
+    async loadTrainingData() {
+        try {
+            // Load training data stats
+            const response = await fetch('/api/training/stats');
+            const stats = await response.json();
+            this.trainingData = stats;
+
+            this.renderStats(stats);
+            this.renderStrategyPerformance(stats);
+            this.renderAIInsights(stats);
+
+            // Load recent outcomes
+            await this.loadRecentOutcomes();
+        } catch (error) {
+            console.error('Error loading training data:', error);
+
+            // Show placeholder data
+            document.getElementById('lab-total-outcomes').textContent = '0';
+            document.getElementById('lab-win-rate').textContent = '0%';
+            document.getElementById('lab-avg-profit').textContent = '0%';
+            document.getElementById('lab-avg-loss').textContent = '0%';
+        }
+    },
+
+    renderStats(stats) {
+        document.getElementById('lab-total-outcomes').textContent = stats.total_outcomes || 0;
+        document.getElementById('lab-completed-rate').textContent =
+            `${stats.completed || 0} completed, ${stats.pending || 0} pending`;
+
+        const winRate = (stats.win_rate || 0) * 100;
+        document.getElementById('lab-win-rate').textContent = winRate.toFixed(1) + '%';
+        document.getElementById('lab-win-loss').textContent =
+            `${stats.total_wins || 0}W / ${stats.total_losses || 0}L`;
+
+        document.getElementById('lab-avg-profit').textContent =
+            (stats.avg_profit_percent || 0).toFixed(1) + '%';
+        document.getElementById('lab-avg-loss').textContent =
+            (stats.avg_loss_percent || 0).toFixed(1) + '%';
+    },
+
+    renderStrategyPerformance(stats) {
+        const container = document.getElementById('strategy-performance');
+
+        if (!stats.strategies || Object.keys(stats.strategies).length === 0) {
+            container.innerHTML = '<p class="text-muted" style="padding: 1rem;">No strategy data yet - add signals to paper trading!</p>';
+            return;
+        }
+
+        container.innerHTML = Object.entries(stats.strategies).map(([strategy, data]) => {
+            const winRate = (data.win_rate * 100).toFixed(1);
+            const profitFactor = (data.profit_factor || 0).toFixed(2);
+
+            return `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>${strategy}</strong>
+                        <span class="badge badge-${data.win_rate >= 0.6 ? 'success' : data.win_rate >= 0.5 ? 'warning' : 'danger'}">
+                            ${winRate}% WR
+                        </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; font-size: 0.875rem;">
+                        <div>
+                            <span class="text-muted">Trades:</span> ${data.total_trades}
+                        </div>
+                        <div>
+                            <span class="text-muted">Avg Win:</span>
+                            <span class="text-success">${data.avg_profit.toFixed(1)}%</span>
+                        </div>
+                        <div>
+                            <span class="text-muted">Avg Loss:</span>
+                            <span class="text-danger">${data.avg_loss.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderAIInsights(stats) {
+        const container = document.getElementById('ai-insights');
+
+        // Generate insights based on data
+        const insights = [];
+
+        if (stats.total_outcomes >= 10) {
+            if (stats.win_rate >= 0.7) {
+                insights.push({
+                    type: 'success',
+                    message: `Strong performance! ${(stats.win_rate * 100).toFixed(0)}% win rate indicates solid signal quality.`
+                });
+            } else if (stats.win_rate < 0.5) {
+                insights.push({
+                    type: 'warning',
+                    message: `Win rate below 50%. AI should adjust signal thresholds (increase min confidence, tighten filters).`
+                });
+            }
+        }
+
+        // Strategy-specific insights
+        if (stats.strategies) {
+            Object.entries(stats.strategies).forEach(([strategy, data]) => {
+                if (data.total_trades >= 5) {
+                    if (data.win_rate >= 0.75) {
+                        insights.push({
+                            type: 'success',
+                            message: `${strategy} performing excellently (${(data.win_rate * 100).toFixed(0)}% WR). Consider increasing position sizes.`
+                        });
+                    } else if (data.win_rate < 0.4) {
+                        insights.push({
+                            type: 'danger',
+                            message: `${strategy} underperforming (${(data.win_rate * 100).toFixed(0)}% WR). Recommend pausing this strategy.`
+                        });
+                    }
+                }
+            });
+        }
+
+        if (insights.length === 0) {
+            insights.push({
+                type: 'info',
+                message: `Collecting data... Need at least 10 completed trades for meaningful AI insights.`
+            });
+        }
+
+        container.innerHTML = insights.map(insight => `
+            <div class="badge badge-${insight.type}" style="display: block; margin-bottom: 0.75rem; padding: 0.75rem; text-align: left;">
+                ${insight.message}
+            </div>
+        `).join('');
+    },
+
+    async loadRecentOutcomes() {
+        try {
+            const response = await fetch('/api/training/recent-outcomes?limit=10');
+            const outcomes = await response.json();
+
+            this.renderOutcomes(outcomes);
+        } catch (error) {
+            console.error('Error loading recent outcomes:', error);
+            document.getElementById('recent-outcomes').innerHTML =
+                '<p class="text-muted" style="padding: 1rem;">No outcomes available yet</p>';
+        }
+    },
+
+    filterOutcomes(filter) {
+        // Re-fetch with filter
+        // For now, just reload all
+        this.loadRecentOutcomes();
+    },
+
+    renderOutcomes(outcomes) {
+        const container = document.getElementById('recent-outcomes');
+
+        if (!outcomes || outcomes.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                    <p>No completed trades yet</p>
+                    <p style="font-size: 0.875rem;">Outcomes will appear here after paper trades close</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = outcomes.map(outcome => {
+            const outcomeClass = outcome.outcome === 'win' ? 'success' : outcome.outcome === 'loss' ? 'danger' : 'warning';
+            const pnlSign = outcome.profit_loss_percent >= 0 ? '+' : '';
+
+            return `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 1.125rem;">${outcome.symbol}</strong>
+                                <span class="badge badge-${outcomeClass}">${outcome.outcome.toUpperCase()}</span>
+                                <span class="badge badge-info">${outcome.strategy}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; font-size: 0.875rem;">
+                                <div>
+                                    <span class="text-muted">Entry:</span> $${outcome.entry_price.toFixed(2)}
+                                </div>
+                                <div>
+                                    <span class="text-muted">Exit:</span> $${outcome.exit_price.toFixed(2)}
+                                </div>
+                                <div>
+                                    <span class="text-muted">Duration:</span> ${outcome.hold_duration_minutes}m
+                                </div>
+                                <div>
+                                    <span class="text-muted">Exit:</span> ${outcome.exit_reason}
+                                </div>
+                                <div>
+                                    <span class="text-muted">Confidence:</span> ${(outcome.confidence * 100).toFixed(0)}%
+                                </div>
+                                <div>
+                                    <span class="text-muted">RSI:</span> ${outcome.rsi_14.toFixed(0)}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-left: 1rem;">
+                            <div style="font-size: 1.5rem; font-weight: bold;" class="text-${outcomeClass}">
+                                ${pnlSign}${outcome.profit_loss_percent.toFixed(1)}%
+                            </div>
+                            <div class="text-muted" style="font-size: 0.875rem;">
+                                ${new Date(outcome.timestamp).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+};
+
+PaperLabPage.init();
+</script>
