@@ -186,60 +186,54 @@ async def get_price_history(
     Returns:
         List of price bars with OHLCV data
     """
-    if not data_provider:
-        raise HTTPException(status_code=503, detail="Data provider not initialized")
-
     try:
-        from datetime import datetime, timedelta
+        import yfinance as yf
+        from datetime import datetime
 
-        # Calculate date range
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-
-        # Map timeframe to API format
-        timeframe_map = {
-            "1Min": "minute",
-            "5Min": "minute",
-            "15Min": "minute",
-            "1Hour": "hour",
-            "1Day": "day"
+        # Map timeframe to yfinance intervals
+        interval_map = {
+            "1Min": "1m",
+            "5Min": "5m",
+            "15Min": "15m",
+            "1Hour": "1h",
+            "1Day": "1d"
         }
 
-        multiplier_map = {
-            "1Min": 1,
-            "5Min": 5,
-            "15Min": 15,
-            "1Hour": 1,
-            "1Day": 1
-        }
+        # Map days to yfinance period
+        if days <= 7:
+            period = f"{days}d"
+        elif days <= 30:
+            period = "1mo"
+        elif days <= 90:
+            period = "3mo"
+        elif days <= 180:
+            period = "6mo"
+        else:
+            period = "1y"
 
-        tf_type = timeframe_map.get(timeframe, "day")
-        multiplier = multiplier_map.get(timeframe, 1)
+        interval = interval_map.get(timeframe, "1d")
 
-        # Fetch aggregates from Polygon
-        bars = data_provider.get_aggregates(
-            symbol=symbol,
-            multiplier=multiplier,
-            timespan=tf_type,
-            from_date=start_date.strftime("%Y-%m-%d"),
-            to_date=end_date.strftime("%Y-%m-%d")
-        )
+        # Fetch data from yfinance
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period, interval=interval)
 
-        if not bars:
+        if df.empty:
+            logger.warning(f"No price data available for {symbol}")
             return []
 
         # Transform to chart format
         chart_data = []
-        for bar in bars:
+        for index, row in df.iterrows():
             chart_data.append({
-                "time": int(bar.timestamp / 1000),  # Convert to seconds for TradingView
-                "open": bar.open,
-                "high": bar.high,
-                "low": bar.low,
-                "close": bar.close,
-                "volume": bar.volume
+                "time": int(index.timestamp()),  # Convert to Unix timestamp
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume'])
             })
 
+        logger.info(f"Fetched {len(chart_data)} bars for {symbol} ({timeframe})")
         return chart_data
 
     except Exception as e:
