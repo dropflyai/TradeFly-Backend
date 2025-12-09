@@ -1233,6 +1233,24 @@ async def get_position_stats(strategy: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# === SPA CATCH-ALL ROUTE ===
+# This MUST be the last route defined (most specific routes first, catch-all last)
+@app.get("/{full_path:path}")
+async def spa_catchall(full_path: str):
+    """
+    Catch-all route for Single Page Application
+    Serves index.html for client-side routing (/scalping, /swing, etc.)
+
+    Allows the frontend router to handle navigation without 404 errors
+    """
+    # Don't interfere with API routes or static files - those should 404 if not found
+    if full_path.startswith("api/") or full_path.startswith("static/"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Serve index.html for all other routes (SPA client-side routing)
+    return FileResponse("static/index.html")
+
+
 if __name__ == "__main__":
     import uvicorn
 
