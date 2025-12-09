@@ -53,7 +53,33 @@ class Router {
             const html = await response.text();
 
             if (appContainer) {
-                appContainer.innerHTML = html;
+                // Create temporary container to parse HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+
+                // Extract script tags before setting innerHTML
+                const scripts = temp.querySelectorAll('script');
+                const scriptContents = [];
+                scripts.forEach(script => {
+                    scriptContents.push(script.textContent);
+                    script.remove(); // Remove from temp so it doesn't get added to DOM
+                });
+
+                // Set HTML without scripts
+                appContainer.innerHTML = temp.innerHTML;
+
+                // Execute scripts manually
+                scriptContents.forEach(scriptContent => {
+                    try {
+                        // Execute in global scope
+                        const scriptElement = document.createElement('script');
+                        scriptElement.textContent = scriptContent;
+                        document.body.appendChild(scriptElement);
+                        document.body.removeChild(scriptElement);
+                    } catch (err) {
+                        console.error('Error executing page script:', err);
+                    }
+                });
             }
 
             // Update active nav
