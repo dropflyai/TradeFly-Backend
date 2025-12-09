@@ -28,6 +28,10 @@ const routes = {
     '/watchlist': {
         template: '/static/pages/watchlist.html',
         init: null
+    },
+    '/settings': {
+        template: '/static/pages/settings.html',
+        init: null
     }
 };
 

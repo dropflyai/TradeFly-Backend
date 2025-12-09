@@ -1,0 +1,524 @@
+<div class="page-header">
+    <h1>Trading Preferences</h1>
+    <p class="text-muted">Customize signal filtering based on your risk tolerance and trading style</p>
+</div>
+
+<!-- Profile Summary -->
+<div class="stats-grid mb-3">
+    <div class="stat-card">
+        <div class="stat-label">Active Profile</div>
+        <div class="stat-value" id="active-profile-name">Custom</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Signals Matched</div>
+        <div class="stat-value stat-up" id="matched-signals-count">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg Match Score</div>
+        <div class="stat-value" id="avg-match-score">-</div>
+    </div>
+</div>
+
+<!-- Settings Form -->
+<div class="card">
+    <h2 style="margin-bottom: 1.5rem;">Trading Preferences</h2>
+
+    <!-- Time Horizon -->
+    <div class="setting-section">
+        <h3>Time Horizon (DTE Preference)</h3>
+        <p class="text-muted">How long do you typically hold options positions?</p>
+
+        <div class="preference-options">
+            <label class="preference-option">
+                <input type="radio" name="dte-preference" value="scalp" checked>
+                <div class="preference-card">
+                    <div class="preference-title">Scalp (0-7 DTE)</div>
+                    <div class="preference-desc">Quick in/out, same day trades</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="dte-preference" value="short">
+                <div class="preference-card">
+                    <div class="preference-title">Short-term (7-30 DTE)</div>
+                    <div class="preference-desc">Swing trades, 1-4 weeks</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="dte-preference" value="medium">
+                <div class="preference-card">
+                    <div class="preference-title">Medium-term (30-90 DTE)</div>
+                    <div class="preference-desc">Position trades, 1-3 months</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="dte-preference" value="leaps">
+                <div class="preference-card">
+                    <div class="preference-title">LEAPs (90+ DTE)</div>
+                    <div class="preference-desc">Long-term investments</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Strike Selection -->
+    <div class="setting-section">
+        <h3>Strike Selection (ITM/OTM Risk)</h3>
+        <p class="text-muted">Where do you prefer strikes relative to current price?</p>
+
+        <div class="preference-options">
+            <label class="preference-option">
+                <input type="radio" name="strike-preference" value="deep-itm">
+                <div class="preference-card">
+                    <div class="preference-title">Deep ITM (Δ > 0.80)</div>
+                    <div class="preference-desc">Lower risk, higher premium</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="strike-preference" value="slight-itm">
+                <div class="preference-card">
+                    <div class="preference-title">Slightly ITM (Δ 0.55-0.80)</div>
+                    <div class="preference-desc">Balanced risk/reward</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="strike-preference" value="atm" checked>
+                <div class="preference-card">
+                    <div class="preference-title">ATM (Δ 0.45-0.55)</div>
+                    <div class="preference-desc">Most liquid, balanced</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="strike-preference" value="slight-otm">
+                <div class="preference-card">
+                    <div class="preference-title">Slightly OTM (Δ 0.30-0.45)</div>
+                    <div class="preference-desc">Higher risk/reward</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="strike-preference" value="far-otm">
+                <div class="preference-card">
+                    <div class="preference-title">Far OTM (Δ < 0.30)</div>
+                    <div class="preference-desc">Lottery tickets, max risk</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Premium Budget -->
+    <div class="setting-section">
+        <h3>Premium Budget (Per Contract)</h3>
+        <p class="text-muted">How much are you comfortable spending per contract?</p>
+
+        <div class="preference-options">
+            <label class="preference-option">
+                <input type="radio" name="premium-budget" value="conservative">
+                <div class="preference-card">
+                    <div class="preference-title">Conservative ($0.50-$2)</div>
+                    <div class="preference-desc">Lower cost, lower risk</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="premium-budget" value="moderate" checked>
+                <div class="preference-card">
+                    <div class="preference-title">Moderate ($2-$5)</div>
+                    <div class="preference-desc">Balanced budget</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="premium-budget" value="aggressive">
+                <div class="preference-card">
+                    <div class="preference-title">Aggressive ($5-$10)</div>
+                    <div class="preference-desc">Higher premium plays</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="premium-budget" value="high-roller">
+                <div class="preference-card">
+                    <div class="preference-title">High-roller ($10+)</div>
+                    <div class="preference-desc">Premium plays only</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Risk Tolerance -->
+    <div class="setting-section">
+        <h3>Risk Tolerance</h3>
+        <p class="text-muted">What's your overall trading style?</p>
+
+        <div class="preference-options">
+            <label class="preference-option">
+                <input type="radio" name="risk-tolerance" value="conservative">
+                <div class="preference-card">
+                    <div class="preference-title">Conservative</div>
+                    <div class="preference-desc">Stable trends, lower volatility</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="risk-tolerance" value="moderate" checked>
+                <div class="preference-card">
+                    <div class="preference-title">Moderate</div>
+                    <div class="preference-desc">Balanced approach</div>
+                </div>
+            </label>
+
+            <label class="preference-option">
+                <input type="radio" name="risk-tolerance" value="aggressive">
+                <div class="preference-card">
+                    <div class="preference-title">Aggressive</div>
+                    <div class="preference-desc">High IV, momentum, volatility</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Minimum Confidence -->
+    <div class="setting-section">
+        <h3>Signal Quality Filter</h3>
+        <p class="text-muted">Minimum confidence threshold for signals</p>
+
+        <div style="padding: 1rem;">
+            <label style="display: flex; align-items: center; gap: 1rem;">
+                <span style="min-width: 120px;">Min Confidence:</span>
+                <input type="range" id="min-confidence-slider" min="70" max="95" value="85" step="5" style="flex: 1;">
+                <span id="min-confidence-value" style="min-width: 50px; font-weight: bold;">85%</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button class="btn btn-primary" id="save-preferences-btn" style="flex: 1;">
+            💾 Save Preferences
+        </button>
+        <button class="btn btn-secondary" id="reset-preferences-btn">
+            🔄 Reset to Defaults
+        </button>
+    </div>
+</div>
+
+<!-- Match Score Explanation -->
+<div class="card mt-3">
+    <h3>How Matching Works</h3>
+    <p class="text-muted">
+        Signals are scored 0-100% based on how well they match your preferences:
+    </p>
+    <ul style="color: var(--text-secondary); margin-top: 1rem;">
+        <li><strong>90-100%:</strong> Perfect match - highly recommended</li>
+        <li><strong>75-89%:</strong> Good match - worth considering</li>
+        <li><strong>60-74%:</strong> Partial match - review carefully</li>
+        <li><strong>Below 60%:</strong> Poor match - filtered out by default</li>
+    </ul>
+</div>
+
+<style>
+.setting-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-section:last-of-type {
+    border-bottom: none;
+}
+
+.setting-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.preference-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.preference-option {
+    cursor: pointer;
+}
+
+.preference-option input[type="radio"] {
+    display: none;
+}
+
+.preference-card {
+    padding: 1rem;
+    background: var(--dark-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.preference-option:hover .preference-card {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.preference-option input[type="radio"]:checked + .preference-card {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.preference-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.preference-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-color);
+    outline: none;
+    border-radius: 0.5rem;
+    height: 8px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    cursor: pointer;
+    border-radius: 50%;
+}
+</style>
+
+<script>
+const SettingsPage = {
+    preferences: null,
+
+    async init() {
+        console.log('Initializing Settings page');
+
+        // Load saved preferences
+        this.loadPreferences();
+
+        // Set up event listeners
+        this.setupEventListeners();
+
+        // Update stats
+        this.updateStats();
+    },
+
+    loadPreferences() {
+        // Load from localStorage or use defaults
+        const saved = localStorage.getItem('tradefly_preferences');
+
+        if (saved) {
+            this.preferences = JSON.parse(saved);
+            this.applyPreferencesToUI();
+        } else {
+            // Set defaults
+            this.preferences = {
+                dtePreference: 'scalp',
+                strikePreference: 'atm',
+                premiumBudget: 'moderate',
+                riskTolerance: 'moderate',
+                minConfidence: 85
+            };
+        }
+    },
+
+    applyPreferencesToUI() {
+        // Apply radio selections
+        document.querySelector(`input[name="dte-preference"][value="${this.preferences.dtePreference}"]`).checked = true;
+        document.querySelector(`input[name="strike-preference"][value="${this.preferences.strikePreference}"]`).checked = true;
+        document.querySelector(`input[name="premium-budget"][value="${this.preferences.premiumBudget}"]`).checked = true;
+        document.querySelector(`input[name="risk-tolerance"][value="${this.preferences.riskTolerance}"]`).checked = true;
+
+        // Apply slider
+        document.getElementById('min-confidence-slider').value = this.preferences.minConfidence;
+        document.getElementById('min-confidence-value').textContent = this.preferences.minConfidence + '%';
+    },
+
+    setupEventListeners() {
+        // Save button
+        document.getElementById('save-preferences-btn').addEventListener('click', () => this.savePreferences());
+
+        // Reset button
+        document.getElementById('reset-preferences-btn').addEventListener('click', () => this.resetPreferences());
+
+        // Slider update
+        const slider = document.getElementById('min-confidence-slider');
+        slider.addEventListener('input', (e) => {
+            document.getElementById('min-confidence-value').textContent = e.target.value + '%';
+        });
+    },
+
+    savePreferences() {
+        // Gather all preferences
+        this.preferences = {
+            dtePreference: document.querySelector('input[name="dte-preference"]:checked').value,
+            strikePreference: document.querySelector('input[name="strike-preference"]:checked').value,
+            premiumBudget: document.querySelector('input[name="premium-budget"]:checked').value,
+            riskTolerance: document.querySelector('input[name="risk-tolerance"]:checked').value,
+            minConfidence: parseInt(document.getElementById('min-confidence-slider').value)
+        };
+
+        // Save to localStorage
+        localStorage.setItem('tradefly_preferences', JSON.stringify(this.preferences));
+
+        // Show success message
+        this.showNotification('Preferences saved successfully!', 'success');
+
+        // Update stats
+        this.updateStats();
+    },
+
+    resetPreferences() {
+        // Clear localStorage
+        localStorage.removeItem('tradefly_preferences');
+
+        // Reset to defaults
+        this.preferences = {
+            dtePreference: 'scalp',
+            strikePreference: 'atm',
+            premiumBudget: 'moderate',
+            riskTolerance: 'moderate',
+            minConfidence: 85
+        };
+
+        // Apply to UI
+        this.applyPreferencesToUI();
+
+        // Show notification
+        this.showNotification('Preferences reset to defaults', 'info');
+    },
+
+    async updateStats() {
+        try {
+            // Get current preferences
+            const prefs = this.preferences || {};
+
+            // Fetch signals and calculate match stats
+            const response = await fetch('/api/options/signals?strategy=SCALPING&min_confidence=0.70&max_results=50');
+            const signals = await response.json();
+
+            // Calculate match scores
+            const scores = signals.map(s => this.calculateMatchScore(s, prefs));
+            const matched = scores.filter(score => score >= 60).length;
+            const avgScore = scores.length > 0
+                ? (scores.reduce((sum, s) => sum + s, 0) / scores.length).toFixed(0)
+                : 0;
+
+            // Update UI
+            document.getElementById('matched-signals-count').textContent = matched;
+            document.getElementById('avg-match-score').textContent = avgScore + '%';
+
+            // Update profile name
+            const profileName = this.getProfileName(prefs);
+            document.getElementById('active-profile-name').textContent = profileName;
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    },
+
+    calculateMatchScore(signal, prefs) {
+        let score = 100;
+
+        // DTE match (30 points)
+        const dte = this.calculateDTE(signal.contract?.expiration);
+        if (prefs.dtePreference === 'scalp' && dte > 7) score -= 30;
+        if (prefs.dtePreference === 'short' && (dte < 7 || dte > 30)) score -= 30;
+        if (prefs.dtePreference === 'medium' && (dte < 30 || dte > 90)) score -= 30;
+        if (prefs.dtePreference === 'leaps' && dte < 90) score -= 30;
+
+        // Delta match (25 points)
+        const delta = Math.abs(signal.contract?.greeks?.delta || 0);
+        if (prefs.strikePreference === 'deep-itm' && delta < 0.80) score -= 25;
+        if (prefs.strikePreference === 'slight-itm' && (delta < 0.55 || delta > 0.80)) score -= 25;
+        if (prefs.strikePreference === 'atm' && (delta < 0.45 || delta > 0.55)) score -= 25;
+        if (prefs.strikePreference === 'slight-otm' && (delta < 0.30 || delta > 0.45)) score -= 25;
+        if (prefs.strikePreference === 'far-otm' && delta > 0.30) score -= 25;
+
+        // Premium match (25 points)
+        const premium = signal.entry_price || 0;
+        if (prefs.premiumBudget === 'conservative' && premium > 2) score -= 25;
+        if (prefs.premiumBudget === 'moderate' && (premium < 2 || premium > 5)) score -= 25;
+        if (prefs.premiumBudget === 'aggressive' && (premium < 5 || premium > 10)) score -= 25;
+        if (prefs.premiumBudget === 'high-roller' && premium < 10) score -= 25;
+
+        // Confidence match (20 points)
+        const confidence = (signal.confidence || 0) * 100;
+        if (confidence < prefs.minConfidence) score -= 20;
+
+        return Math.max(0, score);
+    },
+
+    calculateDTE(expirationDate) {
+        if (!expirationDate) return 0;
+        const expiry = new Date(expirationDate);
+        const now = new Date();
+        const diffTime = Math.abs(expiry - now);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    },
+
+    getProfileName(prefs) {
+        const profiles = {
+            'scalp-atm-moderate-moderate': 'Day Trader',
+            'short-atm-moderate-moderate': 'Swing Trader',
+            'medium-slight-itm-aggressive-moderate': 'Position Trader',
+            'leaps-deep-itm-high-roller-conservative': 'Investor',
+            'scalp-slight-otm-conservative-aggressive': 'Aggressive Scalper'
+        };
+
+        const key = `${prefs.dtePreference}-${prefs.strikePreference}-${prefs.premiumBudget}-${prefs.riskTolerance}`;
+        return profiles[key] || 'Custom';
+    },
+
+    showNotification(message, type) {
+        // Simple notification (can be enhanced)
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: ${type === 'success' ? 'var(--success-color)' : 'var(--primary-color)'};
+            color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+};
+
+// Initialize when page loads
+SettingsPage.init();
+</script>

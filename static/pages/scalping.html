@@ -160,6 +160,11 @@ const ScalpingPage = {
         const confidenceClass = signal.confidence >= 0.90 ? 'confidence-high' : 'confidence-medium';
         const actionColor = signal.action.includes('CALL') ? 'var(--success-color)' : 'var(--danger-color)';
 
+        // Calculate match score based on user preferences
+        const matchScore = this.calculateMatchScore(signal);
+        const matchClass = matchScore >= 90 ? 'match-perfect' : matchScore >= 75 ? 'match-good' : matchScore >= 60 ? 'match-ok' : 'match-poor';
+        const matchLabel = matchScore >= 90 ? 'Perfect Match' : matchScore >= 75 ? 'Good Match' : matchScore >= 60 ? 'Partial Match' : 'Poor Match';
+
         return `
             <div class="signal-card">
                 <div class="signal-header">
@@ -167,8 +172,13 @@ const ScalpingPage = {
                         <div class="signal-symbol">${signal.symbol}</div>
                         <div class="text-muted" style="font-size: 0.875rem;">${signal.strategy}</div>
                     </div>
-                    <div class="signal-confidence ${confidenceClass}">
-                        ${(signal.confidence * 100).toFixed(0)}% Confidence
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div class="match-badge ${matchClass}" title="${matchLabel}">
+                            ${matchScore}% Match
+                        </div>
+                        <div class="signal-confidence ${confidenceClass}">
+                            ${(signal.confidence * 100).toFixed(0)}% Confidence
+                        </div>
                     </div>
                 </div>
 
@@ -266,9 +276,79 @@ const ScalpingPage = {
                 btn.disabled = false;
             }, 2000);
         }
+    },
+
+    calculateMatchScore(signal) {
+        // Load user preferences
+        const saved = localStorage.getItem('tradefly_preferences');
+        if (!saved) return 100; // No preferences = all signals match 100%
+
+        const prefs = JSON.parse(saved);
+        let score = 100;
+
+        // DTE match (30 points)
+        if (prefs.dtePreference === 'scalp' && signal.dte > 7) score -= 30;
+        if (prefs.dtePreference === 'short' && (signal.dte < 7 || signal.dte > 30)) score -= 30;
+        if (prefs.dtePreference === 'medium' && (signal.dte < 30 || signal.dte > 90)) score -= 30;
+        if (prefs.dtePreference === 'leaps' && signal.dte < 90) score -= 30;
+
+        // Delta match (25 points)
+        const delta = Math.abs(signal.delta || 0);
+        if (prefs.strikePreference === 'deep-itm' && delta < 0.80) score -= 25;
+        if (prefs.strikePreference === 'slight-itm' && (delta < 0.55 || delta > 0.80)) score -= 25;
+        if (prefs.strikePreference === 'atm' && (delta < 0.45 || delta > 0.55)) score -= 25;
+        if (prefs.strikePreference === 'slight-otm' && (delta < 0.30 || delta > 0.45)) score -= 25;
+        if (prefs.strikePreference === 'far-otm' && delta > 0.30) score -= 25;
+
+        // Premium match (25 points)
+        const premium = signal.suggested_entry || 0;
+        if (prefs.premiumBudget === 'conservative' && premium > 2) score -= 25;
+        if (prefs.premiumBudget === 'moderate' && (premium < 2 || premium > 5)) score -= 25;
+        if (prefs.premiumBudget === 'aggressive' && (premium < 5 || premium > 10)) score -= 25;
+        if (prefs.premiumBudget === 'high-roller' && premium < 10) score -= 25;
+
+        // Confidence match (20 points)
+        const confidence = (signal.confidence || 0) * 100;
+        if (confidence < prefs.minConfidence) score -= 20;
+
+        return Math.max(0, Math.round(score));
     }
 };
 
 // Initialize when page loads
 ScalpingPage.init();
 </script>
+
+<style>
+.match-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.match-perfect {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.match-good {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.match-ok {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid #f59e0b;
+}
+
+.match-poor {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+</style>
