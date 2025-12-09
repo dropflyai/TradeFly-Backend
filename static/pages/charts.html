@@ -1,0 +1,342 @@
+<div class="page-header">
+    <h1 class="page-title">📈 Advanced Charts</h1>
+    <p class="page-subtitle">Professional-grade price analysis with technical indicators</p>
+</div>
+
+<!-- Controls -->
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div>
+                <label style="color: var(--text-secondary); margin-right: 0.5rem;">Symbol:</label>
+                <select id="chart-symbol" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); min-width: 120px;">
+                    <option value="NVDA">NVDA</option>
+                    <option value="TSLA">TSLA</option>
+                    <option value="AAPL">AAPL</option>
+                    <option value="AMD">AMD</option>
+                    <option value="MSFT">MSFT</option>
+                    <option value="META">META</option>
+                    <option value="GOOGL">GOOGL</option>
+                    <option value="AMZN">AMZN</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-right: 0.5rem;">Timeframe:</label>
+                <select id="chart-timeframe" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); min-width: 120px;">
+                    <option value="1Min">1 Minute</option>
+                    <option value="5Min">5 Minutes</option>
+                    <option value="15Min">15 Minutes</option>
+                    <option value="1Hour">1 Hour</option>
+                    <option value="1Day" selected>1 Day</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-right: 0.5rem;">Period:</label>
+                <select id="chart-period" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); min-width: 120px;">
+                    <option value="7">7 Days</option>
+                    <option value="30" selected>30 Days</option>
+                    <option value="90">90 Days</option>
+                    <option value="180">6 Months</option>
+                    <option value="365">1 Year</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" id="chart-indicators-btn">
+                📊 Indicators
+            </button>
+            <button class="btn btn-primary" id="chart-refresh-btn">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Container -->
+<div class="card" style="padding: 1rem;">
+    <div id="main-chart-container" style="width: 100%; height: 600px; background: rgba(15, 23, 42, 0.3); border-radius: 0.5rem;"></div>
+</div>
+
+<!-- Technical Indicators Panel (Hidden by default) -->
+<div id="indicators-panel" class="card mt-3" style="display: none;">
+    <h3 style="margin-bottom: 1rem;">Technical Indicators</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="indicator-ema9" class="indicator-checkbox" value="ema9">
+            <span>EMA 9 (Fast)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="indicator-ema20" class="indicator-checkbox" value="ema20">
+            <span>EMA 20 (Medium)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="indicator-ema50" class="indicator-checkbox" value="ema50">
+            <span>EMA 50 (Slow)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="indicator-vwap" class="indicator-checkbox" value="vwap">
+            <span>VWAP</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="indicator-bb" class="indicator-checkbox" value="bb">
+            <span>Bollinger Bands</span>
+        </label>
+    </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid mt-3">
+    <div class="stat-card">
+        <div class="stat-label">Current Price</div>
+        <div class="stat-value" id="chart-current-price">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Change (Day)</div>
+        <div class="stat-value" id="chart-day-change">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Volume</div>
+        <div class="stat-value" id="chart-volume">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">High / Low</div>
+        <div class="stat-value" id="chart-high-low">-</div>
+    </div>
+</div>
+
+<script>
+// Charts Page Logic
+const ChartsPage = {
+    chart: null,
+    currentSymbol: 'NVDA',
+    currentTimeframe: '1Day',
+    currentPeriod: 30,
+    indicators: {},
+
+    async init() {
+        console.log('Initializing Charts page');
+
+        // Set up event listeners
+        document.getElementById('chart-symbol').addEventListener('change', (e) => {
+            this.currentSymbol = e.target.value;
+            this.loadChart();
+        });
+
+        document.getElementById('chart-timeframe').addEventListener('change', (e) => {
+            this.currentTimeframe = e.target.value;
+            this.loadChart();
+        });
+
+        document.getElementById('chart-period').addEventListener('change', (e) => {
+            this.currentPeriod = parseInt(e.target.value);
+            this.loadChart();
+        });
+
+        document.getElementById('chart-refresh-btn').addEventListener('click', () => {
+            this.loadChart();
+        });
+
+        document.getElementById('chart-indicators-btn').addEventListener('click', () => {
+            const panel = document.getElementById('indicators-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Indicator checkboxes
+        document.querySelectorAll('.indicator-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                this.toggleIndicator(e.target.value, e.target.checked);
+            });
+        });
+
+        // Load initial chart
+        await this.loadChart();
+    },
+
+    async loadChart() {
+        try {
+            console.log(`Loading chart for ${this.currentSymbol} (${this.currentTimeframe}, ${this.currentPeriod} days)`);
+
+            // Fetch price data
+            const priceData = await TradeFlyCharts.fetchPriceData(
+                this.currentSymbol,
+                this.currentTimeframe,
+                this.currentPeriod
+            );
+
+            if (!priceData || priceData.length === 0) {
+                console.warn('No price data, using demo data');
+                const demoData = TradeFlyCharts.generateDemoData(100, this.currentPeriod);
+                this.renderChart(demoData.candleData, demoData.volumeData);
+                return;
+            }
+
+            // Transform data
+            const { candleData, volumeData } = TradeFlyCharts.transformPriceData(priceData);
+
+            // Render chart
+            this.renderChart(candleData, volumeData);
+
+            // Update stats
+            this.updateStats(candleData, volumeData);
+
+        } catch (error) {
+            console.error('Error loading chart:', error);
+            // Fallback to demo data
+            const demoData = TradeFlyCharts.generateDemoData(100, this.currentPeriod);
+            this.renderChart(demoData.candleData, demoData.volumeData);
+        }
+    },
+
+    renderChart(candleData, volumeData) {
+        // Destroy existing chart if it exists
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
+        }
+
+        // Create new chart
+        this.chart = TradeFlyCharts.createFullChart('main-chart-container', this.currentSymbol);
+
+        if (this.chart) {
+            // Load data
+            this.chart.updateData(candleData, volumeData);
+
+            // Re-apply any active indicators
+            Object.keys(this.indicators).forEach(indicator => {
+                if (this.indicators[indicator]) {
+                    this.applyIndicator(indicator, candleData);
+                }
+            });
+        }
+    },
+
+    toggleIndicator(indicator, enabled) {
+        this.indicators[indicator] = enabled;
+
+        if (!this.chart) return;
+
+        if (enabled) {
+            // Fetch candle data from current chart
+            // For now, we'll need to re-fetch or cache it
+            console.log(`Applying indicator: ${indicator}`);
+            // This is a placeholder - actual implementation would apply the indicator
+        } else {
+            console.log(`Removing indicator: ${indicator}`);
+            // Remove indicator from chart
+        }
+    },
+
+    applyIndicator(indicator, candleData) {
+        if (!this.chart) return;
+
+        switch(indicator) {
+            case 'ema9':
+                const ema9 = this.chart.addMovingAverage(9, '#3b82f6');
+                const ema9Data = this.calculateEMA(candleData, 9);
+                ema9.setData(ema9Data);
+                break;
+            case 'ema20':
+                const ema20 = this.chart.addMovingAverage(20, '#8b5cf6');
+                const ema20Data = this.calculateEMA(candleData, 20);
+                ema20.setData(ema20Data);
+                break;
+            case 'ema50':
+                const ema50 = this.chart.addMovingAverage(50, '#ec4899');
+                const ema50Data = this.calculateEMA(candleData, 50);
+                ema50.setData(ema50Data);
+                break;
+            case 'vwap':
+                // VWAP would need volume data as well
+                console.log('VWAP indicator (requires backend calculation)');
+                break;
+            case 'bb':
+                console.log('Bollinger Bands indicator (requires backend calculation)');
+                break;
+        }
+    },
+
+    calculateEMA(candleData, period) {
+        const emaData = [];
+        const multiplier = 2 / (period + 1);
+        let ema = null;
+
+        candleData.forEach((candle, index) => {
+            if (index < period - 1) {
+                return; // Not enough data yet
+            }
+
+            if (ema === null) {
+                // Initialize with SMA
+                let sum = 0;
+                for (let i = 0; i < period; i++) {
+                    sum += candleData[index - period + 1 + i].close;
+                }
+                ema = sum / period;
+            } else {
+                // Calculate EMA
+                ema = (candle.close - ema) * multiplier + ema;
+            }
+
+            emaData.push({
+                time: candle.time,
+                value: ema
+            });
+        });
+
+        return emaData;
+    },
+
+    updateStats(candleData, volumeData) {
+        if (!candleData || candleData.length === 0) return;
+
+        const latest = candleData[candleData.length - 1];
+        const previous = candleData.length > 1 ? candleData[candleData.length - 2] : latest;
+
+        // Current price
+        document.getElementById('chart-current-price').textContent = `$${latest.close.toFixed(2)}`;
+
+        // Day change
+        const change = latest.close - previous.close;
+        const changePercent = (change / previous.close) * 100;
+        const changeEl = document.getElementById('chart-day-change');
+        changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
+        changeEl.className = 'stat-value ' + (change >= 0 ? 'stat-up' : 'stat-down');
+
+        // Volume
+        if (volumeData && volumeData.length > 0) {
+            const latestVolume = volumeData[volumeData.length - 1].value;
+            const volumeFormatted = latestVolume >= 1000000
+                ? `${(latestVolume / 1000000).toFixed(2)}M`
+                : `${(latestVolume / 1000).toFixed(0)}K`;
+            document.getElementById('chart-volume').textContent = volumeFormatted;
+        }
+
+        // High / Low
+        const high = Math.max(...candleData.map(c => c.high));
+        const low = Math.min(...candleData.map(c => c.low));
+        document.getElementById('chart-high-low').textContent = `$${high.toFixed(2)} / $${low.toFixed(2)}`;
+    }
+};
+
+// Initialize when page loads
+ChartsPage.init();
+</script>
+
+<style>
+.indicator-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+}
+
+.mt-3 {
+    margin-top: 1.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 1.5rem;
+}
+</style>

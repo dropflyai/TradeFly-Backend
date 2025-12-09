@@ -17,6 +17,10 @@ const routes = {
         template: '/static/pages/swing.html',
         init: null
     },
+    '/charts': {
+        template: '/static/pages/charts.html',
+        init: null
+    },
     '/monitor': {
         template: '/static/pages/monitor.html',
         init: null
