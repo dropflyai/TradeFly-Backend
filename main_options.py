@@ -23,6 +23,8 @@ from paper_trading import PaperTradingEngine, TradeOutcome
 from backtest_engine import BacktestEngine
 from position_tracker import PositionTracker, ExitSignal, ExitReason
 from market_hours import MarketHours
+from top_movers import TopMoversScanner
+from supabase_client import get_db
 
 # Load environment variables
 load_dotenv()
@@ -40,6 +42,7 @@ market_data_api: Optional[PolygonMarketDataService] = None
 signal_detector: Optional[OptionsSignalDetector] = None
 paper_trading: Optional[PaperTradingEngine] = None
 position_tracker: Optional[PositionTracker] = None
+top_movers_scanner: Optional[TopMoversScanner] = None
 
 # Signal cache - dramatically improves performance (30-second TTL)
 # Key: (watchlist_str, strategy_str, min_confidence)
@@ -87,7 +90,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 TradeFly Options - Starting up...")
 
-    global options_api, market_data_api, signal_detector, paper_trading, position_tracker
+    global options_api, market_data_api, signal_detector, paper_trading, position_tracker, top_movers_scanner
 
     # Initialize paper trading engine
     paper_trading = PaperTradingEngine()
@@ -96,6 +99,10 @@ async def lifespan(app: FastAPI):
     # Initialize position tracker
     position_tracker = PositionTracker()
     logger.info("✅ Position tracker initialized")
+
+    # Initialize top movers scanner
+    top_movers_scanner = TopMoversScanner()
+    logger.info("✅ Top movers scanner initialized")
 
     # Initialize Massive Options API
     massive_api_key = os.getenv("POLYGON_API_KEY")  # Same key works for options
@@ -172,6 +179,65 @@ async def get_market_status():
         Market status with current time, session info, and trading hours
     """
     return MarketHours.get_market_status()
+
+
+@app.get("/api/market/top-movers")
+async def get_top_movers():
+    """
+    Get top moving stocks (gainers, losers, most active)
+    Updated every 5 minutes
+
+    Returns:
+        List of top movers with price, % change, volume
+    """
+    if not top_movers_scanner:
+        raise HTTPException(status_code=503, detail="Top movers scanner not initialized")
+
+    try:
+        movers = top_movers_scanner.get_market_movers_display()
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "count": len(movers),
+            "movers": movers
+        }
+    except Exception as e:
+        logger.error(f"Error getting top movers: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/market/dynamic-watchlist")
+async def get_dynamic_watchlist(
+    min_change: float = 0.5,
+    max_stocks: int = 500
+):
+    """
+    Get dynamically generated watchlist based on market movement - MARKET-WIDE SCAN
+
+    Args:
+        min_change: Minimum % change to include (default 0.5% - very sensitive)
+        max_stocks: Maximum stocks to return (default 500 - full market coverage)
+
+    Returns:
+        List of symbols being actively scanned for options signals across ENTIRE market
+    """
+    if not top_movers_scanner:
+        raise HTTPException(status_code=503, detail="Top movers scanner not initialized")
+
+    try:
+        watchlist = top_movers_scanner.get_dynamic_watchlist(
+            min_change_percent=min_change,
+            max_stocks=max_stocks
+        )
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "count": len(watchlist),
+            "min_change_percent": min_change,
+            "symbols": watchlist,
+            "scanning_message": f"Scanning {len(watchlist)} stocks with >{min_change}% movement"
+        }
+    except Exception as e:
+        logger.error(f"Error getting dynamic watchlist: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/market/price-history")
@@ -270,8 +336,22 @@ async def get_signals(
     if not signal_detector:
         raise HTTPException(status_code=503, detail="Signal detector not initialized")
 
-    # Parse watchlist
-    watchlist = symbols.split(",") if symbols else DEFAULT_WATCHLIST
+    # Parse watchlist - use dynamic top movers when no symbols provided
+    if symbols:
+        watchlist = symbols.split(",")
+    else:
+        # Use dynamic watchlist based on market movement - MARKET-WIDE SCAN
+        if top_movers_scanner:
+            watchlist = top_movers_scanner.get_dynamic_watchlist(
+                min_change_percent=1.0,  # Higher threshold to get more liquid stocks
+                max_stocks=100  # Scan top 100 movers (still 5x more than original 21)
+            )
+            logger.info(f"📊 MARKET-WIDE SCAN: {len(watchlist)} stocks being analyzed for options signals")
+        else:
+            # Fallback to static watchlist if scanner not initialized
+            watchlist = DEFAULT_WATCHLIST
+            logger.warning("⚠️  Top movers scanner not available, using static watchlist")
+
     watchlist_str = ",".join(sorted(watchlist))  # Sort for consistent cache keys
 
     # Get strategies to run
@@ -281,13 +361,13 @@ async def get_signals(
     # Create cache key
     cache_key = (watchlist_str, strategy_str, min_confidence)
 
-    # Check cache (30-second TTL)
+    # Check cache (5-minute TTL for market-wide scan)
     now = datetime.now()
     if cache_key in signals_cache:
         cached_signals, cached_time = signals_cache[cache_key]
         age_seconds = (now - cached_time).total_seconds()
 
-        if age_seconds < 30:
+        if age_seconds < 300:  # 5 minutes cache
             logger.info(f"⚡ Cache HIT - Returning {len(cached_signals)} signals (age: {age_seconds:.1f}s)")
             # Still auto-log to paper trading
             if paper_trading:
@@ -323,7 +403,16 @@ async def get_signals(
 
         # Store in cache
         signals_cache[cache_key] = (price_filtered_signals, now)
-        logger.info(f"✅ Cached {len(price_filtered_signals)} signals for 30 seconds")
+        logger.info(f"✅ Cached {len(price_filtered_signals)} signals for 5 minutes")
+
+        # Save to Supabase database
+        db = get_db()
+        if db.is_connected():
+            for signal in price_filtered_signals:
+                try:
+                    db.save_signal(signal.dict())
+                except Exception as e:
+                    logger.warning(f"Failed to save signal to database: {e}")
 
         # Auto-log filtered signals to paper trading
         if paper_trading:
@@ -362,7 +451,17 @@ async def get_top_signals(
     if not signal_detector:
         raise HTTPException(status_code=503, detail="Signal detector not initialized")
 
-    symbols = watchlist.split(",") if watchlist else DEFAULT_WATCHLIST
+    # Use dynamic watchlist when not specified - MARKET-WIDE SCAN
+    if watchlist:
+        symbols = watchlist.split(",")
+    else:
+        if top_movers_scanner:
+            symbols = top_movers_scanner.get_dynamic_watchlist(
+                min_change_percent=0.5,  # Very sensitive
+                max_stocks=500  # Scan 500 stocks
+            )
+        else:
+            symbols = DEFAULT_WATCHLIST
 
     try:
         signals = signal_detector.get_top_signals(
@@ -419,19 +518,20 @@ async def get_options_chain(symbol: str):
 @app.get("/api/options/liquid/{symbol}")
 async def get_liquid_options(
     symbol: str,
-    min_volume: int = 1000,
-    max_spread: float = 5.0
+    min_volume: int = 10,  # Low threshold to include cheap OTM options
+    max_spread: float = 50.0  # Wide tolerance for cheap options ($0.25-$5 range)
 ):
     """
     Get liquid options suitable for trading
+    Includes CHEAP options ($0.25-$5) which can have huge % gains
 
     Args:
         symbol: Stock symbol
-        min_volume: Minimum daily volume
-        max_spread: Maximum bid-ask spread %
+        min_volume: Minimum daily volume (default 10 for cheap options)
+        max_spread: Maximum bid-ask spread % (default 50% for cheap options)
 
     Returns:
-        List of liquid option contracts
+        List of liquid option contracts including affordable plays
     """
     if not options_api:
         raise HTTPException(status_code=503, detail="Options API not initialized")
@@ -501,14 +601,24 @@ async def get_unusual_activity(
 @app.get("/api/watchlist")
 async def get_watchlist():
     """
-    Get default watchlist
+    Get current watchlist (dynamic top movers)
 
     Returns:
         List of symbols being monitored
     """
+    # Return dynamic watchlist if available
+    if top_movers_scanner:
+        watchlist = top_movers_scanner.get_dynamic_watchlist(
+            min_change_percent=2.0,
+            max_stocks=100
+        )
+    else:
+        watchlist = DEFAULT_WATCHLIST
+
     return {
-        "watchlist": DEFAULT_WATCHLIST,
-        "count": len(DEFAULT_WATCHLIST)
+        "watchlist": watchlist,
+        "count": len(watchlist),
+        "is_dynamic": top_movers_scanner is not None
     }
 
 
@@ -530,7 +640,17 @@ async def start_background_scan(
     if not signal_detector:
         raise HTTPException(status_code=503, detail="Signal detector not initialized")
 
-    watchlist = symbols.split(",") if symbols else DEFAULT_WATCHLIST
+    # Use dynamic watchlist when not specified
+    if symbols:
+        watchlist = symbols.split(",")
+    else:
+        if top_movers_scanner:
+            watchlist = top_movers_scanner.get_dynamic_watchlist(
+                min_change_percent=2.0,
+                max_stocks=100
+            )
+        else:
+            watchlist = DEFAULT_WATCHLIST
 
     background_tasks.add_task(
         run_background_scan,

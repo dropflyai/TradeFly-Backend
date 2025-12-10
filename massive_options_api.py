@@ -4,11 +4,14 @@ Real-time options data, Greeks, and analytics
 
 API Documentation: https://massive.com/docs/options
 Requires: Options Advanced subscription ($99/mo)
+
+FALLBACK: Uses yfinance when Massive/Polygon returns no data
 """
 import logging
 from datetime import datetime, date, timedelta
 from typing import Optional, List
 import requests
+import yfinance as yf
 from options_models import (
     OptionContract,
     OptionType,
@@ -152,6 +155,7 @@ class MassiveOptionsAPI:
     ) -> List[OptionContract]:
         """
         Get liquid options suitable for trading
+        AUTOMATICALLY falls back to yfinance if Massive returns no data
 
         Args:
             symbol: Stock symbol
@@ -161,11 +165,24 @@ class MassiveOptionsAPI:
         Returns:
             List of liquid OptionContract objects
         """
+        # Try Massive/Polygon first
         all_contracts = self.get_option_snapshot(symbol)
 
+        # FALLBACK: If no contracts or all zeros, use yfinance
+        valid_contracts = [c for c in all_contracts if c.pricing.mark > 0]
+
+        if not valid_contracts:
+            logger.warning(f"⚠️  Massive returned no valid data for {symbol}, using yfinance fallback")
+            all_contracts = self.get_options_chain_yfinance(symbol, max_days_to_exp=45)
+
+        # Filter for liquidity
         liquid_contracts = []
         for contract in all_contracts:
-            # Filter by volume
+            # Skip if no valid pricing
+            if contract.pricing.mark <= 0:
+                continue
+
+            # Filter by volume (be more lenient with yfinance data)
             if contract.volume_metrics.volume < min_volume:
                 continue
 
@@ -459,3 +476,161 @@ class MassiveOptionsAPI:
                         )
 
         return unusual_contracts
+
+    def get_options_chain_yfinance(
+        self,
+        symbol: str,
+        min_days_to_exp: int = 0,
+        max_days_to_exp: int = 45
+    ) -> List[OptionContract]:
+        """
+        FALLBACK: Get options chain from yfinance (free, real-time)
+
+        Use when Massive/Polygon returns no data or all zeros
+
+        Args:
+            symbol: Stock symbol
+            min_days_to_exp: Minimum days to expiration
+            max_days_to_exp: Maximum days to expiration
+
+        Returns:
+            List of OptionContract objects with REAL pricing data
+        """
+        try:
+            logger.info(f"🔄 Using yfinance fallback for {symbol} options chain")
+
+            ticker = yf.Ticker(symbol)
+            stock_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+
+            if not stock_price:
+                logger.error(f"Could not get stock price for {symbol}")
+                return []
+
+            # Get all available expiration dates
+            expirations = ticker.options
+            if not expirations:
+                logger.warning(f"No options available for {symbol}")
+                return []
+
+            contracts = []
+            today = date.today()
+
+            for exp_str in expirations:
+                exp_date = datetime.strptime(exp_str, "%Y-%m-%d").date()
+                days_to_exp = (exp_date - today).days
+
+                # Filter by expiration range
+                if days_to_exp < min_days_to_exp or days_to_exp > max_days_to_exp:
+                    continue
+
+                # Get calls and puts for this expiration
+                opt_chain = ticker.option_chain(exp_str)
+
+                # Parse calls
+                for _, row in opt_chain.calls.iterrows():
+                    contract = self._parse_yfinance_contract(
+                        symbol, row, exp_date, OptionType.CALL, stock_price, days_to_exp
+                    )
+                    if contract and contract.pricing.mark > 0:  # Only valid contracts
+                        contracts.append(contract)
+
+                # Parse puts
+                for _, row in opt_chain.puts.iterrows():
+                    contract = self._parse_yfinance_contract(
+                        symbol, row, exp_date, OptionType.PUT, stock_price, days_to_exp
+                    )
+                    if contract and contract.pricing.mark > 0:  # Only valid contracts
+                        contracts.append(contract)
+
+            logger.info(f"✅ yfinance: Retrieved {len(contracts)} valid contracts for {symbol}")
+            return contracts
+
+        except Exception as e:
+            logger.error(f"Error fetching yfinance options for {symbol}: {e}")
+            return []
+
+    def _parse_yfinance_contract(
+        self,
+        symbol: str,
+        row: dict,
+        exp_date: date,
+        opt_type: OptionType,
+        stock_price: float,
+        days_to_exp: int
+    ) -> Optional[OptionContract]:
+        """Parse yfinance row into OptionContract"""
+        try:
+            strike = float(row['strike'])
+            bid = float(row.get('bid', 0) or 0)
+            ask = float(row.get('ask', 0) or 0)
+            last = float(row.get('lastPrice', 0) or 0)
+
+            # Calculate mark price
+            if bid > 0 and ask > 0:
+                mark = (bid + ask) / 2
+            elif last > 0:
+                mark = last
+            else:
+                return None  # No valid pricing
+
+            pricing = OptionPricing(
+                bid=bid,
+                ask=ask,
+                last=last,
+                mark=mark
+            )
+
+            # Volume metrics
+            volume = int(row.get('volume', 0) or 0)
+            open_interest = int(row.get('openInterest', 0) or 0)
+
+            volume_metrics = VolumeMetrics(
+                volume=volume,
+                open_interest=open_interest,
+                volume_avg_30d=max(1, volume),  # Estimate
+                volume_ratio=1.0  # Estimate
+            )
+
+            # Calculate Greeks
+            iv = float(row.get('impliedVolatility', 0.30) or 0.30)
+            greeks_calc = GreeksCalculator()
+            greeks_data = greeks_calc.calculate_all_greeks(
+                underlying_price=stock_price,
+                strike_price=strike,
+                days_to_expiration=days_to_exp,
+                implied_volatility=iv,
+                option_type="call" if opt_type == OptionType.CALL else "put"
+            )
+
+            greeks = Greeks(
+                delta=greeks_data["delta"],
+                gamma=greeks_data["gamma"],
+                theta=greeks_data["theta"],
+                vega=greeks_data["vega"],
+                rho=greeks_data["rho"]
+            )
+
+            # IV metrics
+            iv_metrics = ImpliedVolatility(
+                iv=iv,
+                iv_rank=50.0,
+                iv_percentile=50.0,
+                historical_volatility=iv * 0.9
+            )
+
+            return OptionContract(
+                symbol=symbol,
+                strike=strike,
+                expiration=exp_date,
+                option_type=opt_type,
+                pricing=pricing,
+                volume_metrics=volume_metrics,
+                greeks=greeks,
+                iv_metrics=iv_metrics,
+                underlying_price=stock_price,
+                contract_id=f"{symbol}_{strike}_{opt_type.value}_{exp_date}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error parsing yfinance contract: {e}")
+            return None

@@ -1,179 +1,145 @@
 """
-Supabase client for storing signals and user data
+Supabase Database Client for TradeFly AI
+Handles all database operations for signals, market movers, and paper trading
 """
+
+import os
+import json
 import logging
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
-from config import settings
-from models import TradingSignal
 
 logger = logging.getLogger(__name__)
 
-
-class SupabaseClient:
-    """Client for Supabase database operations"""
+class SupabaseDB:
+    """Supabase database client for TradeFly"""
 
     def __init__(self):
-        self.client: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_service_key
-        )
-        logger.info("Supabase client initialized")
+        """Initialize Supabase client"""
+        self.url = os.getenv("SUPABASE_URL")
+        self.key = os.getenv("SUPABASE_SERVICE_KEY")  # Use service key for server-side
 
-    def save_signal(self, signal: TradingSignal) -> bool:
-        """
-        Save a trading signal to Supabase
+        if not self.url or not self.key:
+            logger.warning("⚠️  Supabase credentials not found. Database features disabled.")
+            self.client = None
+            return
 
-        Args:
-            signal: TradingSignal object to save
-
-        Returns:
-            True if successful, False otherwise
-        """
         try:
-            data = {
-                "ticker": signal.ticker,
-                "signal_type": signal.signal_type.value,
-                "quality": signal.quality.value,
-                "current_price": signal.current_price,
-                "entry_price": signal.entry_price,
-                "stop_loss": signal.stop_loss,
-                "take_profit_1": signal.take_profit_1,
-                "take_profit_2": signal.take_profit_2,
-                "vwap": signal.vwap,
-                "ema_9": signal.ema9,  # Database uses underscore format
-                "ema_20": signal.ema20,  # Database uses underscore format
-                # Note: ema50 not in database schema, omitting
-                "volume": signal.volume,
-                "avg_volume": signal.avg_volume,
-                "ai_reasoning": signal.ai_reasoning,
-                "confidence_score": signal.confidence_score,
-                "risk_factors": signal.risk_factors,
-                # Note: related_news and market_news not in original schema, might need migration
-                "timeframe": signal.timeframe,
-                "is_active": signal.is_active,
-                "created_at": signal.timestamp.isoformat()
-            }
+            self.client: Client = create_client(self.url, self.key)
+            logger.info("✅ Supabase client initialized")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Supabase: {e}")
+            self.client = None
 
-            result = self.client.table("trading_signals").insert(data).execute()
-            logger.info(f"Saved signal for {signal.ticker}: {signal.signal_type.value} ({signal.quality.value})")
+    def is_connected(self) -> bool:
+        """Check if database is connected"""
+        return self.client is not None
+
+    def save_market_movers(self, movers: List[Dict], category: str = "mixed") -> bool:
+        """Save market movers to database"""
+        if not self.client:
+            return False
+
+        try:
+            records = []
+            now = datetime.utcnow().isoformat()
+
+            for mover in movers:
+                records.append({
+                    "symbol": mover["symbol"],
+                    "price": float(mover["price"]),
+                    "change_percent": float(mover["change_percent"]),
+                    "volume": int(mover["volume"]),
+                    "category": category,
+                    "scanned_at": now
+                })
+
+            for i in range(0, len(records), 100):
+                batch = records[i:i+100]
+                self.client.table("market_movers").insert(batch).execute()
+
+            logger.info(f"💾 Saved {len(records)} market movers to database")
             return True
 
         except Exception as e:
-            logger.error(f"Error saving signal to Supabase: {e}")
+            logger.error(f"❌ Error saving market movers: {e}")
             return False
 
-    def get_active_signals(self) -> List[dict]:
-        """
-        Get all active signals from Supabase
+    def save_signal(self, signal: Dict) -> bool:
+        """Save options signal to database"""
+        if not self.client:
+            return False
 
-        Returns:
-            List of active signal dictionaries
-        """
         try:
-            result = self.client.table("trading_signals")\
-                .select("*")\
-                .eq("is_active", True)\
-                .order("created_at", desc=True)\
-                .execute()
+            contract = signal.get("contract", {})
+            greeks = contract.get("greeks", {})
 
-            return result.data
+            record = {
+                "signal_id": signal.get("signal_id"),
+                "symbol": contract.get("symbol"),
+                "strategy": signal.get("strategy"),
+                "action": signal.get("action"),
+                "strike": float(contract.get("strike", 0)),
+                "expiration": contract.get("expiration"),
+                "option_type": contract.get("option_type"),
+                "days_to_expiry": int(contract.get("days_to_expiry", 0)),
+                "entry_price": float(signal.get("entry", 0)),
+                "target_price": float(signal.get("target", 0)),
+                "stop_loss": float(signal.get("stop_loss", 0)),
+                "confidence": float(signal.get("confidence", 0)),
+                "delta": float(greeks.get("delta", 0)) if greeks.get("delta") else None,
+                "gamma": float(greeks.get("gamma", 0)) if greeks.get("gamma") else None,
+                "theta": float(greeks.get("theta", 0)) if greeks.get("theta") else None,
+                "vega": float(greeks.get("vega", 0)) if greeks.get("vega") else None,
+                "underlying_price": float(contract.get("underlying_price", 0)) if contract.get("underlying_price") else None,
+                "volume": int(contract.get("volume_metrics", {}).get("volume", 0)) if contract.get("volume_metrics") else None,
+                "open_interest": int(contract.get("volume_metrics", {}).get("open_interest", 0)) if contract.get("volume_metrics") else None,
+                "contract_data": json.dumps(signal),
+                "expires_at": (datetime.utcnow() + timedelta(days=1)).isoformat()
+            }
+
+            self.client.table("options_signals").upsert(record).execute()
+            return True
 
         except Exception as e:
-            logger.error(f"Error fetching active signals: {e}")
+            logger.error(f"❌ Error saving signal: {e}")
+            return False
+
+    def get_signals(self, strategy: Optional[str] = None, min_confidence: float = 0.0, limit: int = 20) -> List[Dict]:
+        """Get options signals from database"""
+        if not self.client:
             return []
 
-    def deactivate_old_signals(self, hours_old: int = 2):
-        """
-        Deactivate signals older than specified hours
-
-        Args:
-            hours_old: Number of hours after which to deactivate signals
-        """
         try:
-            cutoff_time = datetime.now().isoformat()
+            query = self.client.table("options_signals").select("*")
 
-            # Deactivate signals older than cutoff
-            result = self.client.table("trading_signals")\
-                .update({"is_active": False})\
-                .lt("created_at", cutoff_time)\
-                .eq("is_active", True)\
-                .execute()
+            if strategy:
+                query = query.eq("strategy", strategy)
 
-            if result.data:
-                logger.info(f"Deactivated {len(result.data)} old signals")
+            if min_confidence > 0:
+                query = query.gte("confidence", min_confidence)
+
+            result = query.order("created_at", desc=True).limit(limit).execute()
+
+            signals = []
+            for row in result.data:
+                signal_data = json.loads(row["contract_data"])
+                signals.append(signal_data)
+
+            return signals
 
         except Exception as e:
-            logger.error(f"Error deactivating old signals: {e}")
+            logger.error(f"❌ Error getting signals: {e}")
+            return []
 
-    def get_signal_count_today(self, ticker: Optional[str] = None) -> int:
-        """
-        Get count of signals created today
 
-        Args:
-            ticker: Optional ticker to filter by
+# Global instance
+_db_instance = None
 
-        Returns:
-            Number of signals today
-        """
-        try:
-            today = datetime.now().date().isoformat()
-
-            query = self.client.table("trading_signals")\
-                .select("id", count="exact")\
-                .gte("created_at", today)
-
-            if ticker:
-                query = query.eq("ticker", ticker)
-
-            result = query.execute()
-            return result.count or 0
-
-        except Exception as e:
-            logger.error(f"Error getting signal count: {e}")
-            return 0
-
-    def delete_duplicate_signals(self):
-        """
-        Delete duplicate signals for same ticker/type within 5 minutes
-        Keeps the highest quality signal
-        """
-        try:
-            # Get all active signals
-            signals = self.get_active_signals()
-
-            # Group by ticker and signal_type
-            seen = {}
-            duplicates = []
-
-            for signal in signals:
-                key = f"{signal['ticker']}_{signal['signal_type']}"
-
-                if key in seen:
-                    # Found duplicate - keep higher quality one
-                    existing = seen[key]
-                    quality_order = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
-
-                    if quality_order[signal['quality']] > quality_order[existing['quality']]:
-                        # New signal is better, mark old as duplicate
-                        duplicates.append(existing['id'])
-                        seen[key] = signal
-                    else:
-                        # Existing is better, mark new as duplicate
-                        duplicates.append(signal['id'])
-                else:
-                    seen[key] = signal
-
-            # Delete duplicates
-            if duplicates:
-                for dup_id in duplicates:
-                    self.client.table("trading_signals")\
-                        .delete()\
-                        .eq("id", dup_id)\
-                        .execute()
-
-                logger.info(f"Deleted {len(duplicates)} duplicate signals")
-
-        except Exception as e:
-            logger.error(f"Error deleting duplicates: {e}")
+def get_db() -> SupabaseDB:
+    """Get global database instance"""
+    global _db_instance
+    if _db_instance is None:
+        _db_instance = SupabaseDB()
+    return _db_instance

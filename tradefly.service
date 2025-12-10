@@ -1,0 +1,22 @@
+[Unit]
+Description=TradeFly Options Trading API
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/tradefly
+Environment="PATH=/var/www/tradefly/venv/bin"
+Environment="POLYGON_API_KEY=3LJuAPplRFEeAlnMDHkmFVK93hcxEftF"
+Environment="SUPABASE_URL=https://nplgxhthjwwyywbnvxzt.supabase.co"
+Environment="SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbGd4aHRoand3eXl3Ym52eHp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE5MjE3MSwiZXhwIjoyMDc5NzY4MTcxfQ.qGhvTBRJ1Q49JvCOQ5Gb5IciFhsNFzEiEYQQ5wDZj9I"
+Environment="PORT=8002"
+Environment="ACCOUNT_BALANCE=10000"
+ExecStart=/var/www/tradefly/venv/bin/python3 main_options.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

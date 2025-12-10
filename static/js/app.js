@@ -6,16 +6,20 @@
 // Define routes
 const routes = {
     '/': {
-        template: '/static/pages/scalping.html',
-        init: null  // Scalping page has its own init
+        template: '/static/pages/signals.html',
+        init: null  // Signals page (unified scalping/swing)
+    },
+    '/signals': {
+        template: '/static/pages/signals.html',
+        init: null
     },
     '/scalping': {
         template: '/static/pages/scalping.html',
-        init: null
+        init: null  // Keep for backward compatibility
     },
     '/swing': {
         template: '/static/pages/swing.html',
-        init: null
+        init: null  // Keep for backward compatibility
     },
     '/charts': {
         template: '/static/pages/charts.html',

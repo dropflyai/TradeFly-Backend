@@ -1,0 +1,597 @@
+<div class="page-header">
+    <h1 class="page-title">📊 Options Signals</h1>
+    <p class="page-subtitle">Unified signal dashboard with customizable filters</p>
+</div>
+
+<!-- Market Status Banner -->
+<div id="market-status-banner" style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color);">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div id="market-status-icon" style="font-size: 1.5rem;">⏳</div>
+        <div>
+            <div id="market-status-text" style="font-weight: 600; font-size: 0.875rem;">Checking market status...</div>
+            <div id="market-status-time" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Loading...</div>
+        </div>
+    </div>
+    <div id="market-countdown" style="font-family: monospace; font-size: 0.875rem; font-weight: 600;"></div>
+</div>
+
+<!-- Market Movers Ticker -->
+<div class="card mb-3" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3);">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+        <div style="font-weight: 600; color: var(--primary);">🔥 Scanning Top Movers</div>
+        <div id="movers-refresh-time" style="font-size: 0.75rem; color: var(--text-secondary);"></div>
+    </div>
+    <div id="market-movers-ticker" style="overflow: hidden; position: relative; height: 60px; background: rgba(0, 0, 0, 0.2); border-radius: 0.375rem; padding: 0.5rem;">
+        <div id="ticker-track" style="display: flex; gap: 2rem; align-items: center; animation: scroll-left 60s linear infinite;">
+            <div class="loading">Loading top movers...</div>
+        </div>
+    </div>
+    <div id="movers-summary" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);"></div>
+</div>
+
+<style>
+@keyframes scroll-left {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+</style>
+
+<!-- Stats Summary - Removed per user request (non-functional) -->
+
+<!-- Advanced Filters -->
+<div class="card mb-3">
+    <h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">🎯 Signal Filters</h3>
+
+    <!-- Row 1: Strategy & Moneyness -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Strategy Type</label>
+            <select id="filter-strategy" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 0.875rem;">
+                <option value="" selected>ALL Strategies</option>
+                <option value="SCALPING">⚡ Scalping (0-7 DTE)</option>
+                <option value="SWING">📈 Swing (14-30 DTE)</option>
+                <option value="MOMENTUM">🚀 Momentum</option>
+                <option value="VOLUME_SPIKE">📊 Volume Spike</option>
+                <option value="LEAP">🎯 LEAPs (90+ DTE)</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Moneyness</label>
+            <select id="filter-moneyness" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
+                <option value="" selected>ALL Options</option>
+                <option value="deep-itm">💰 Deep ITM (>10% ITM)</option>
+                <option value="itm">💵 ITM (In The Money)</option>
+                <option value="atm">🎯 ATM (At The Money)</option>
+                <option value="otm">📉 OTM (Out of Money)</option>
+                <option value="far-otm">🎲 Far OTM (>10% OTM)</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Min Confidence</label>
+            <select id="filter-confidence" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 0.875rem;">
+                <option value="0.50" selected>50%+</option>
+                <option value="0.60">60%+</option>
+                <option value="0.70">70%+</option>
+                <option value="0.75">75%+</option>
+                <option value="0.80">80%+</option>
+                <option value="0.85">85%+</option>
+                <option value="0.90">90%+</option>
+                <option value="0.95">95%+</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Days to Expiration</label>
+            <select id="filter-dte" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
+                <option value="" selected>ALL Expirations</option>
+                <option value="0-3">0-3 DTE (Same Week)</option>
+                <option value="4-7">4-7 DTE (Weekly)</option>
+                <option value="7-14">7-14 DTE (Bi-Weekly)</option>
+                <option value="14-30">14-30 DTE (Monthly)</option>
+                <option value="30-60">30-60 DTE (2 Months)</option>
+                <option value="60-90">60-90 DTE (Quarterly)</option>
+                <option value="90+">90+ DTE (LEAPs)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Row 2: Price Range -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Min Entry Price</label>
+            <div style="position: relative;">
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);">$</span>
+                <input
+                    type="number"
+                    id="filter-min-price"
+                    value="0.01"
+                    step="0.01"
+                    min="0.01"
+                    style="width: 100%; padding: 0.5rem 0.5rem 0.5rem 1.75rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);"
+                    placeholder="0.01">
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Max Entry Price</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <div style="position: relative; flex: 1;">
+                    <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);">$</span>
+                    <input
+                        type="number"
+                        id="filter-max-price"
+                        value="50.00"
+                        step="0.01"
+                        min="0.01"
+                        style="width: 100%; padding: 0.5rem 0.5rem 0.5rem 1.75rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 0.875rem;"
+                        placeholder="50.00">
+                </div>
+                <div style="display: flex; gap: 0.25rem;">
+                    <button onclick="SignalsPage.setMaxPrice(1)" class="btn-quick-price">$1</button>
+                    <button onclick="SignalsPage.setMaxPrice(5)" class="btn-quick-price">$5</button>
+                    <button onclick="SignalsPage.setMaxPrice(10)" class="btn-quick-price">$10</button>
+                    <button onclick="SignalsPage.setMaxPrice(50)" class="btn-quick-price">$50</button>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Min Delta</label>
+            <input
+                type="number"
+                id="filter-min-delta"
+                value="0.20"
+                step="0.05"
+                min="0.00"
+                max="1.00"
+                style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);"
+                placeholder="0.20">
+        </div>
+
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 0.25rem; font-size: 0.875rem;">Max Delta</label>
+            <input
+                type="number"
+                id="filter-max-delta"
+                value="0.99"
+                step="0.05"
+                min="0.00"
+                max="1.00"
+                style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);"
+                placeholder="0.99">
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button class="btn btn-secondary" id="signals-reset-filters-btn">↺ Reset Filters</button>
+        <button class="btn btn-primary" id="signals-refresh-btn">🔄 Refresh Signals</button>
+    </div>
+</div>
+
+<style>
+.btn-quick-price {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-quick-price:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+</style>
+
+<!-- Signals Grid -->
+<div id="signals-container">
+    <div class="loading">Loading signals...</div>
+</div>
+
+<script>
+// Unified Signals Page Logic
+const SignalsPage = {
+    signals: [],
+    topMovers: [],
+    filters: {
+        strategy: '',  // ALL strategies by default
+        moneyness: '',
+        confidence: 0.50,  // Lower default for more results
+        dte: '',
+        minPrice: 0.01,
+        maxPrice: 50.00,  // Higher default for more results
+        minDelta: 0.20,
+        maxDelta: 0.99
+    },
+
+    async init() {
+        console.log('Initializing Signals page');
+
+        // Set up event listeners
+        this.setupEventListeners();
+
+        // Load initial data
+        await this.loadMarketStatus();
+        await this.loadTopMovers();
+        await this.loadSignals();
+
+        // Auto-refresh signals every 5 minutes (matches backend cache)
+        setInterval(() => this.loadSignals(), 300000);  // 5 minutes
+        setInterval(() => this.loadTopMovers(), 300000); // 5 minutes
+    },
+
+    setupEventListeners() {
+        // Filter change listeners
+        document.getElementById('filter-strategy').addEventListener('change', (e) => {
+            this.filters.strategy = e.target.value;
+            this.loadSignals();
+        });
+
+        document.getElementById('filter-moneyness').addEventListener('change', (e) => {
+            this.filters.moneyness = e.target.value;
+            this.filterSignals();
+        });
+
+        document.getElementById('filter-confidence').addEventListener('change', (e) => {
+            this.filters.confidence = parseFloat(e.target.value);
+            this.loadSignals();
+        });
+
+        document.getElementById('filter-dte').addEventListener('change', (e) => {
+            this.filters.dte = e.target.value;
+            this.filterSignals();
+        });
+
+        document.getElementById('filter-min-price').addEventListener('change', (e) => {
+            this.filters.minPrice = parseFloat(e.target.value);
+            this.filterSignals();
+        });
+
+        document.getElementById('filter-max-price').addEventListener('change', (e) => {
+            this.filters.maxPrice = parseFloat(e.target.value);
+            this.loadSignals();
+        });
+
+        document.getElementById('filter-min-delta').addEventListener('change', (e) => {
+            this.filters.minDelta = parseFloat(e.target.value);
+            this.filterSignals();
+        });
+
+        document.getElementById('filter-max-delta').addEventListener('change', (e) => {
+            this.filters.maxDelta = parseFloat(e.target.value);
+            this.filterSignals();
+        });
+
+        // Button listeners
+        document.getElementById('signals-refresh-btn').addEventListener('click', () => this.loadSignals());
+        document.getElementById('signals-reset-filters-btn').addEventListener('click', () => this.resetFilters());
+    },
+
+    setMaxPrice(price) {
+        document.getElementById('filter-max-price').value = price.toFixed(2);
+        this.filters.maxPrice = price;
+        this.loadSignals();
+    },
+
+    resetFilters() {
+        this.filters = {
+            strategy: 'SCALPING',
+            moneyness: '',
+            confidence: 0.70,
+            dte: '',
+            minPrice: 0.01,
+            maxPrice: 5.00,
+            minDelta: 0.20,
+            maxDelta: 0.99
+        };
+
+        // Update UI
+        document.getElementById('filter-strategy').value = 'SCALPING';
+        document.getElementById('filter-moneyness').value = '';
+        document.getElementById('filter-confidence').value = '0.70';
+        document.getElementById('filter-dte').value = '';
+        document.getElementById('filter-min-price').value = '0.01';
+        document.getElementById('filter-max-price').value = '5.00';
+        document.getElementById('filter-min-delta').value = '0.20';
+        document.getElementById('filter-max-delta').value = '0.99';
+
+        this.loadSignals();
+    },
+
+    async loadMarketStatus() {
+        try {
+            const response = await fetch('/api/market/status');
+            const data = await response.json();
+
+            const statusIcon = document.getElementById('market-status-icon');
+            const statusText = document.getElementById('market-status-text');
+            const statusTime = document.getElementById('market-status-time');
+
+            // Get user's local time
+            const now = new Date();
+            const userLocalTime = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const timezoneAbbr = new Date().toLocaleTimeString('en-US', {
+                timeZoneName: 'short'
+            }).split(' ')[2];
+
+            // API returns is_market_open, not is_open
+            if (data.is_market_open || data.is_trading_hours) {
+                statusIcon.textContent = '🟢';
+                statusText.textContent = 'Market is OPEN';
+
+                // Show both ET and user's local time
+                if (timezoneAbbr === 'EST' || timezoneAbbr === 'EDT') {
+                    // User is in ET, only show one time
+                    statusTime.textContent = `${data.current_time_et} • ${data.message || 'Trading hours'}`;
+                } else {
+                    // Show both times
+                    statusTime.textContent = `${userLocalTime} ${timezoneAbbr} (${data.current_time_et}) • ${data.message || 'Trading hours'}`;
+                }
+            } else {
+                statusIcon.textContent = '🔴';
+                statusText.textContent = 'Market is CLOSED';
+
+                // Show when it opens in user's timezone
+                const nextOpen = data.next_open || '9:30 AM ET tomorrow';
+                if (timezoneAbbr === 'EST' || timezoneAbbr === 'EDT') {
+                    statusTime.textContent = data.message || `Opens at ${nextOpen}`;
+                } else {
+                    statusTime.textContent = `Your time: ${userLocalTime} ${timezoneAbbr} • ${data.message || `Opens ${nextOpen}`}`;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading market status:', error);
+        }
+    },
+
+    async loadTopMovers() {
+        try {
+            const response = await fetch('/api/market/top-movers');
+            const data = await response.json();
+            this.topMovers = data.movers || [];
+
+            this.renderTopMovers();
+        } catch (error) {
+            console.error('Error loading top movers:', error);
+        }
+    },
+
+    renderTopMovers() {
+        const track = document.getElementById('ticker-track');
+        const summary = document.getElementById('movers-summary');
+        const refreshTime = document.getElementById('movers-refresh-time');
+
+        if (this.topMovers.length === 0) {
+            track.innerHTML = '<div style="color: var(--text-secondary);">No movers data available</div>';
+            return;
+        }
+
+        // Duplicate the movers array for seamless scrolling
+        const duplicatedMovers = [...this.topMovers, ...this.topMovers];
+
+        track.innerHTML = duplicatedMovers.map(mover => {
+            const changeColor = mover.change_percent >= 0 ? '#10b981' : '#ef4444';
+            const changeIcon = mover.change_percent >= 0 ? '▲' : '▼';
+
+            // Calculate dollar change from percentage
+            const dollarChange = (mover.price * mover.change_percent) / 100;
+
+            return `
+                <div style="display: flex; flex-direction: column; min-width: 140px; padding: 0.5rem; background: rgba(0, 0, 0, 0.3); border-radius: 0.375rem;">
+                    <div style="font-weight: 600; font-size: 0.875rem;">${mover.symbol}</div>
+                    <div style="font-size: 0.875rem; margin: 0.25rem 0;">$${mover.price.toFixed(2)}</div>
+                    <div style="font-size: 0.75rem; color: ${changeColor}; font-weight: 600;">
+                        ${changeIcon} $${Math.abs(dollarChange).toFixed(2)} (${Math.abs(mover.change_percent).toFixed(2)}%)
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Update summary
+        const gainers = this.topMovers.filter(m => m.change_percent > 0).length;
+        const losers = this.topMovers.filter(m => m.change_percent < 0).length;
+        summary.textContent = `Tracking ${this.topMovers.length} stocks: ${gainers} gainers, ${losers} losers`;
+
+        refreshTime.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    },
+
+    async loadSignals() {
+        try {
+            const container = document.getElementById('signals-container');
+            container.innerHTML = '<div class="loading">Loading signals...</div>';
+
+            const params = new URLSearchParams();
+            if (this.filters.strategy) params.append('strategy', this.filters.strategy);
+            params.append('min_confidence', this.filters.confidence);
+            params.append('max_price', this.filters.maxPrice);
+            params.append('max_results', '20');
+
+            console.log('🔍 Fetching signals with params:', params.toString());
+            const response = await fetch(`/api/options/signals?${params}`);
+            console.log('📡 Response status:', response.status);
+
+            const data = await response.json();
+            console.log('📊 Received signals:', data.length, 'signals');
+            console.log('📋 First signal:', data[0]);
+
+            this.signals = data;
+
+            this.filterSignals();
+        } catch (error) {
+            console.error('❌ Error loading signals:', error);
+            document.getElementById('signals-container').innerHTML =
+                '<div class="error">Error loading signals. Please try again.</div>';
+        }
+    },
+
+    filterSignals() {
+        console.log('🔍 Starting filter with', this.signals.length, 'signals');
+        let filtered = [...this.signals];
+
+        // Apply moneyness filter
+        if (this.filters.moneyness) {
+            const beforeLength = filtered.length;
+            filtered = filtered.filter(signal => {
+                const moneyness = this.calculateMoneyness(signal);
+                return moneyness === this.filters.moneyness;
+            });
+            console.log(`  Moneyness filter: ${beforeLength} → ${filtered.length}`);
+        }
+
+        // Apply DTE filter
+        if (this.filters.dte) {
+            const beforeLength = filtered.length;
+            filtered = filtered.filter(signal => {
+                const dte = signal.contract.days_to_expiry;
+                const [min, max] = this.filters.dte === '90+' ? [90, 999] : this.filters.dte.split('-').map(Number);
+                return dte >= min && (max === undefined || dte <= max);
+            });
+            console.log(`  DTE filter: ${beforeLength} → ${filtered.length}`);
+        }
+
+        // Apply price range filter
+        const beforePrice = filtered.length;
+        filtered = filtered.filter(signal => {
+            return signal.entry >= this.filters.minPrice && signal.entry <= this.filters.maxPrice;
+        });
+        console.log(`  Price filter (${this.filters.minPrice}-${this.filters.maxPrice}): ${beforePrice} → ${filtered.length}`);
+
+        // Apply delta range filter
+        const beforeDelta = filtered.length;
+        filtered = filtered.filter(signal => {
+            const delta = Math.abs(signal.contract.greeks.delta);
+            return delta >= this.filters.minDelta && delta <= this.filters.maxDelta;
+        });
+        console.log(`  Delta filter (${this.filters.minDelta}-${this.filters.maxDelta}): ${beforeDelta} → ${filtered.length}`);
+
+        console.log('✅ Final filtered signals:', filtered.length);
+        this.renderSignals(filtered);
+    },
+
+    calculateMoneyness(signal) {
+        const contract = signal.contract;
+        const stockPrice = contract.underlying_price;
+        const strike = contract.strike;
+        const isCall = signal.action.includes('CALL');
+
+        const pctDiff = ((stockPrice - strike) / strike) * 100;
+
+        if (isCall) {
+            if (pctDiff > 10) return 'deep-itm';
+            if (pctDiff > 2) return 'itm';
+            if (pctDiff > -2 && pctDiff <= 2) return 'atm';
+            if (pctDiff > -10) return 'otm';
+            return 'far-otm';
+        } else {
+            if (pctDiff < -10) return 'deep-itm';
+            if (pctDiff < -2) return 'itm';
+            if (pctDiff >= -2 && pctDiff < 2) return 'atm';
+            if (pctDiff < 10) return 'otm';
+            return 'far-otm';
+        }
+    },
+
+    renderSignals(signals) {
+        const container = document.getElementById('signals-container');
+
+        if (signals.length === 0) {
+            container.innerHTML = `
+                <div class="card" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                    <h3 style="margin-bottom: 0.5rem;">No Signals Found</h3>
+                    <p>Try adjusting your filters or wait for market opportunities</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = signals.map(signal => this.renderSignalCard(signal)).join('');
+    },
+
+    renderSignalCard(signal) {
+        const contract = signal.contract;
+        const isCall = signal.action.includes('CALL');
+        const actionColor = isCall ? '#10b981' : '#ef4444';
+        const actionText = isCall ? '📈 CALL' : '📉 PUT';
+
+        const moneyness = this.calculateMoneyness(signal);
+        const moneynessLabels = {
+            'deep-itm': 'Deep ITM',
+            'itm': 'ITM',
+            'atm': 'ATM',
+            'otm': 'OTM',
+            'far-otm': 'Far OTM'
+        };
+
+        return `
+            <div class="card mb-2" style="border-left: 3px solid ${actionColor};">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem;">
+                            ${contract.symbol} $${contract.strike} ${isCall ? 'C' : 'P'}
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                            ${contract.expiration} • ${contract.days_to_expiry} DTE • ${moneynessLabels[moneyness]}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: ${actionColor};">
+                            $${signal.entry.toFixed(2)}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Entry</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Target</div>
+                        <div style="font-weight: 600; color: #10b981;">${signal.target.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Stop Loss</div>
+                        <div style="font-weight: 600; color: #ef4444;">${signal.stop_loss.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Confidence</div>
+                        <div style="font-weight: 600;">${(signal.confidence * 100).toFixed(0)}%</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Delta</div>
+                        <div style="font-weight: 600;">${contract.greeks.delta.toFixed(2)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary" style="flex: 1; background: ${actionColor}; border-color: ${actionColor};">
+                        ${actionText} → $${signal.entry.toFixed(2)}
+                    </button>
+                    <button class="btn btn-secondary" onclick="SignalsPage.viewDetails('${contract.contract_id}')">
+                        View Details
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    viewDetails(contractId) {
+        console.log('View details for:', contractId);
+        // TODO: Navigate to contract details page
+    }
+};
+
+// Initialize on page load
+SignalsPage.init();
+</script>

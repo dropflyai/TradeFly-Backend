@@ -1,13 +1,13 @@
 [
   {
-    "signal_id": "SCALPING_NIO_20251210_082302",
-    "symbol": "NIO",
+    "signal_id": "SCALPING_BMNU_20251210_111732",
+    "symbol": "BMNU",
     "strategy": "SCALPING",
     "action": "BUY_CALL",
-    "entry_price": 4.05,
-    "entry_time": "2025-12-10T08:23:02.292032",
-    "target_price": 4.859999999999999,
-    "stop_loss": 3.8474999999999997,
-    "strike": 1.5,
+    "entry_price": 9.6,
+    "entry_time": "2025-12-10T11:17:32.437980",
+    "target_price": 11.52,
+    "stop_loss": 9.12,
+    "strike": 2.0,
     "option_type": "call",
     "expiration": 
