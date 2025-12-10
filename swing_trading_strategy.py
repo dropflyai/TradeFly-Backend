@@ -80,8 +80,8 @@ class SwingTradingStrategy:
 
         # === FILTER 1: Time to Expiration (14-30 days) ===
         try:
-            exp_date = datetime.strptime(contract.expiration, "%Y-%m-%d")
-            days_to_exp = (exp_date - datetime.now()).days
+            # contract.expiration is already a date object, not a string
+            days_to_exp = (contract.expiration - datetime.now().date()).days
 
             if days_to_exp < 14:
                 logger.debug(f"{contract.symbol}: Too close to expiration ({days_to_exp} days)")
@@ -92,13 +92,14 @@ class SwingTradingStrategy:
                 return None
 
         except Exception as e:
-            logger.debug(f"{contract.symbol}: Could not parse expiration date")
+            logger.debug(f"{contract.symbol}: Could not parse expiration date: {e}")
             return None
 
-        # === FILTER 2: Delta (0.40-0.60 for swings) ===
+        # === FILTER 2: Delta (0.40-0.99 for swings) - RELAXED ===
+        # Accept wider range including deep ITM for momentum continuation
         delta = abs(contract.greeks.delta)
-        if not (0.40 <= delta <= 0.60):
-            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside swing range (want 0.40-0.60)")
+        if not (0.40 <= delta <= 0.99):
+            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside swing range (want 0.40-0.99)")
             return None
 
         # === FILTER 3: Price Affordability (under $5/share = $500/contract) ===

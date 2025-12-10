@@ -29,10 +29,10 @@
         <button class="btn btn-primary" id="tab-open" onclick="MonitorPage.switchTab('open')">
             Open Positions
         </button>
-        <button class="btn" id="tab-paper" onclick="MonitorPage.switchTab('paper')">
+        <button class="btn btn-secondary" id="tab-paper" onclick="MonitorPage.switchTab('paper')">
             Paper Trading
         </button>
-        <button class="btn" id="tab-exit-signals" onclick="MonitorPage.switchTab('exit-signals')">
+        <button class="btn btn-secondary" id="tab-exit-signals" onclick="MonitorPage.switchTab('exit-signals')">
             Exit Signals
         </button>
     </div>
@@ -98,10 +98,10 @@ const MonitorPage = {
             const btn = document.getElementById(`tab-${t}`);
             if (t === tab) {
                 btn.classList.add('btn-primary');
-                btn.classList.remove('btn');
+                btn.classList.remove('btn-secondary');
             } else {
                 btn.classList.remove('btn-primary');
-                btn.classList.add('btn');
+                btn.classList.add('btn-secondary');
             }
         });
 

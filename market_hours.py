@@ -51,31 +51,39 @@ class MarketHours:
         # Determine session
         if cls.MARKET_OPEN <= current_time < cls.MARKET_CLOSE:
             status = 'OPEN'
-            session = 'Regular Hours'
+            session = 'REGULAR'  # Frontend expects 'REGULAR'
             is_market_open = True
             is_trading_hours = True
             message = f'Market OPEN - Closes at {cls.MARKET_CLOSE.strftime("%I:%M %p")} ET'
+            market_open = None
+            market_close = cls.MARKET_CLOSE.strftime("%I:%M %p")
 
         elif cls.PREMARKET_START <= current_time < cls.MARKET_OPEN:
             status = 'PRE_MARKET'
-            session = 'Pre-Market'
+            session = 'PRE_MARKET'  # Frontend expects 'PRE_MARKET'
             is_market_open = False
             is_trading_hours = False
             message = f'Pre-market - Opens at {cls.MARKET_OPEN.strftime("%I:%M %p")} ET'
+            market_open = cls.MARKET_OPEN.strftime("%I:%M %p")
+            market_close = None
 
         elif cls.MARKET_CLOSE <= current_time < cls.AFTERHOURS_END:
             status = 'AFTER_HOURS'
-            session = 'After Hours'
+            session = 'AFTER_HOURS'  # Frontend expects 'AFTER_HOURS'
             is_market_open = False
             is_trading_hours = False
             message = f'After hours - Closed at {cls.MARKET_CLOSE.strftime("%I:%M %p")} ET'
+            market_open = None
+            market_close = None
 
         else:
             status = 'CLOSED'
-            session = 'Closed'
+            session = 'CLOSED'  # Frontend expects 'CLOSED'
             is_market_open = False
             is_trading_hours = False
             message = 'Markets closed'
+            market_open = None
+            market_close = None
 
         return {
             'status': status,
@@ -85,7 +93,9 @@ class MarketHours:
             'is_market_open': is_market_open,
             'is_trading_hours': is_trading_hours,
             'message': message,
-            'day_of_week': now.strftime('%A')
+            'day_of_week': now.strftime('%A'),
+            'market_open': market_open,
+            'market_close': market_close
         }
 
     @classmethod

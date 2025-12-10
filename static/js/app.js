@@ -29,6 +29,34 @@ const routes = {
         template: '/static/pages/paper-lab.html',
         init: null
     },
+    '/learn': {
+        template: '/static/pages/learn.html',
+        init: null
+    },
+    '/module-1-lesson-1': {
+        template: '/static/pages/module-1-lesson-1.html',
+        init: null
+    },
+    '/module-1-lesson-2': {
+        template: '/static/pages/module-1-lesson-2.html',
+        init: null
+    },
+    '/module-1-lesson-3': {
+        template: '/static/pages/module-1-lesson-3.html',
+        init: null
+    },
+    '/module-1-lesson-4': {
+        template: '/static/pages/module-1-lesson-4.html',
+        init: null
+    },
+    '/module-1-lesson-5': {
+        template: '/static/pages/module-1-lesson-5.html',
+        init: null
+    },
+    '/module-1-quiz': {
+        template: '/static/pages/module-1-quiz.html',
+        init: null
+    },
     '/watchlist': {
         template: '/static/pages/watchlist.html',
         init: null

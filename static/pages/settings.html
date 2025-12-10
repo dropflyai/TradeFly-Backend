@@ -184,16 +184,32 @@
     </div>
 
     <!-- Minimum Confidence -->
-    <div class="setting-section">
-        <h3>Signal Quality Filter</h3>
+    <div class="setting-section" id="confidence-slider-section">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Signal Quality Filter</h3>
+            <span id="feature-unlock-badge" style="display: none; background: var(--success-color); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold;">
+                🎓 UNLOCKED
+            </span>
+        </div>
         <p class="text-muted">Minimum confidence threshold for signals</p>
 
-        <div style="padding: 1rem;">
+        <div id="confidence-slider-unlocked" style="padding: 1rem; display: none;">
             <label style="display: flex; align-items: center; gap: 1rem;">
                 <span style="min-width: 120px;">Min Confidence:</span>
                 <input type="range" id="min-confidence-slider" min="70" max="95" value="85" step="5" style="flex: 1;">
                 <span id="min-confidence-value" style="min-width: 50px; font-weight: bold;">85%</span>
             </label>
+        </div>
+
+        <div id="confidence-slider-locked" style="padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 0.5rem; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔒</div>
+            <h4 style="color: var(--primary); margin: 0.5rem 0;">Feature Locked</h4>
+            <p style="color: var(--text-secondary); margin: 0.5rem 0 1rem 0;">
+                Complete <strong>Module 1: Options Basics</strong> to unlock the confidence threshold slider
+            </p>
+            <a href="/learn" class="btn btn-primary">
+                Go to Trading Academy →
+            </a>
         </div>
     </div>
 
@@ -324,8 +340,37 @@ const SettingsPage = {
         // Set up event listeners
         this.setupEventListeners();
 
+        // Check feature unlocks
+        this.checkFeatureUnlocks();
+
         // Update stats
         this.updateStats();
+    },
+
+    checkFeatureUnlocks() {
+        // Check if Module 1 is completed
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        if (saved) {
+            const progress = JSON.parse(saved);
+            const module1Complete = progress.completedModules.includes('module-1');
+
+            if (module1Complete) {
+                // Unlock confidence slider
+                document.getElementById('confidence-slider-locked').style.display = 'none';
+                document.getElementById('confidence-slider-unlocked').style.display = 'block';
+                document.getElementById('feature-unlock-badge').style.display = 'inline-block';
+            } else {
+                // Keep locked
+                document.getElementById('confidence-slider-locked').style.display = 'block';
+                document.getElementById('confidence-slider-unlocked').style.display = 'none';
+                document.getElementById('feature-unlock-badge').style.display = 'none';
+            }
+        } else {
+            // No progress - keep locked
+            document.getElementById('confidence-slider-locked').style.display = 'block';
+            document.getElementById('confidence-slider-unlocked').style.display = 'none';
+            document.getElementById('feature-unlock-badge').style.display = 'none';
+        }
     },
 
     loadPreferences() {

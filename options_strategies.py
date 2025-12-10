@@ -69,11 +69,12 @@ class ScalpingStrategy:
             logger.debug(f"{contract.symbol}: Volume too low {contract.volume_metrics.volume}")
             return None
 
-        # FILTER 3: Delta range - RELAXED for after-hours study mode
-        # Accept wider range (0.20-0.95) to track more potential plays
+        # FILTER 3: Delta range - VERY RELAXED for study mode
+        # Accept almost all deltas (0.20-0.99) to track live opportunities
+        # Real traders DO trade deep ITM options for momentum plays
         delta = abs(contract.greeks.delta)
-        if not (0.20 <= delta <= 0.95):  # Very wide range for study mode
-            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.20-0.95)")
+        if not (0.20 <= delta <= 0.99):  # Accept deep ITM for momentum
+            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.20-0.99)")
             return None
 
         # FILTER 3B: Price affordability - RELAXED for study mode

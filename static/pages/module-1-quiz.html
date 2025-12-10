@@ -1,0 +1,439 @@
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">🎯 Module 1: Final Quiz</h1>
+            <p class="page-subtitle">Test your knowledge - 70% required to pass (9/12 correct)</p>
+        </div>
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back to Academy</button>
+    </div>
+</div>
+
+<!-- Quiz Progress -->
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Quiz Progress</span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;" id="quiz-progress-text">0 / 12 answered</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div id="quiz-progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<!-- Quiz Instructions -->
+<div class="card mb-3" style="border: 2px solid var(--primary);">
+    <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--primary);">📋 Instructions</h3>
+    <ul style="margin: 0; line-height: 1.8; color: var(--text-secondary);">
+        <li>Answer all 12 questions to complete the quiz</li>
+        <li>You need 9 or more correct (70%) to pass</li>
+        <li>You can retake the quiz as many times as needed</li>
+        <li>Passing unlocks: <strong style="color: var(--success-color);">Confidence threshold slider in Settings</strong></li>
+        <li>Reward: <strong style="color: var(--warning-color);">+250 XP</strong> on first pass</li>
+    </ul>
+</div>
+
+<!-- Quiz Questions -->
+<div id="quiz-container">
+    <!-- Questions will be dynamically rendered -->
+</div>
+
+<!-- Submit Button -->
+<div class="card" style="text-align: center; border: 2px solid var(--success-color); display: none;" id="submit-container">
+    <h3 style="color: var(--success-color); margin-top: 0;">✅ All Questions Answered!</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Ready to see your results?</p>
+    <button class="btn btn-primary" style="font-size: 1.125rem; padding: 0.75rem 2rem;" onclick="Module1Quiz.submitQuiz()">
+        Submit Quiz & See Results 🎯
+    </button>
+</div>
+
+<!-- Results Modal (hidden initially) -->
+<div id="results-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 1000; padding: 2rem; overflow-y: auto;">
+    <div class="card" style="max-width: 600px; margin: 2rem auto; border: 3px solid var(--primary);">
+        <div id="results-content"></div>
+    </div>
+</div>
+
+<script>
+const Module1Quiz = {
+    questions: [
+        {
+            id: 1,
+            question: "What is an options contract?",
+            options: [
+                "A contract that obligates you to buy stock at a set price",
+                "A contract giving you the right, but not obligation, to buy/sell stock at a set price",
+                "A type of stock that pays dividends",
+                "A futures contract for commodities"
+            ],
+            correct: 1,
+            explanation: "An option gives you the RIGHT (not obligation) to buy or sell stock at a strike price before expiration."
+        },
+        {
+            id: 2,
+            question: "If you think a stock will go UP, which option should you buy?",
+            options: [
+                "A PUT option",
+                "A CALL option",
+                "Both CALL and PUT",
+                "Neither - buy the stock instead"
+            ],
+            correct: 1,
+            explanation: "CALL options profit when the stock price rises. Calls are bullish bets."
+        },
+        {
+            id: 3,
+            question: "If you think a stock will go DOWN, which option should you buy?",
+            options: [
+                "A CALL option",
+                "A PUT option",
+                "An ATM option",
+                "An ITM option"
+            ],
+            correct: 1,
+            explanation: "PUT options profit when the stock price falls. Puts are bearish bets."
+        },
+        {
+            id: 4,
+            question: "AAPL is trading at $150. Which strike is In-The-Money (ITM) for a CALL option?",
+            options: [
+                "$160 strike",
+                "$150 strike",
+                "$140 strike",
+                "$155 strike"
+            ],
+            correct: 2,
+            explanation: "For calls, ITM means strike < stock price. $140 < $150, so the $140 call is ITM with $10 intrinsic value."
+        },
+        {
+            id: 5,
+            question: "What does DTE stand for?",
+            options: [
+                "Daily Trade Execution",
+                "Delta Theta Exposure",
+                "Days To Expiration",
+                "Direct Transaction Entry"
+            ],
+            correct: 2,
+            explanation: "DTE = Days To Expiration. It measures how many days remain before your option expires."
+        },
+        {
+            id: 6,
+            question: "When does time decay (theta) accelerate the most?",
+            options: [
+                "When you first buy the option",
+                "At 60 DTE",
+                "In the last 7-14 days before expiration",
+                "Time decay is constant"
+            ],
+            correct: 2,
+            explanation: "Time decay accelerates exponentially in the final 7-14 days. This is why you should exit before expiration week."
+        },
+        {
+            id: 7,
+            question: "In an options chain, when you BUY an option, which price do you pay?",
+            options: [
+                "The BID price",
+                "The ASK price",
+                "The midpoint",
+                "The strike price"
+            ],
+            correct: 1,
+            explanation: "When BUYING, you pay the ASK price. When SELLING, you receive the BID price. The spread is the market maker's profit."
+        },
+        {
+            id: 8,
+            question: "What does Open Interest (OI) measure in an options chain?",
+            options: [
+                "How many contracts traded today",
+                "The total number of contracts still open/active",
+                "The implied volatility percentage",
+                "The bid-ask spread width"
+            ],
+            correct: 1,
+            explanation: "Open Interest shows total contracts still open (not closed). High OI (500+) indicates good liquidity."
+        },
+        {
+            id: 9,
+            question: "What is the maximum loss when BUYING an options contract?",
+            options: [
+                "Unlimited",
+                "The strike price",
+                "The premium you paid",
+                "50% of your investment"
+            ],
+            correct: 2,
+            explanation: "When buying options, your max loss is the premium paid. This is your defined risk - you can't lose more than that."
+        },
+        {
+            id: 10,
+            question: "Option Premium = Intrinsic Value + __________?",
+            options: [
+                "Strike Value",
+                "Extrinsic Value (Time Value)",
+                "Market Value",
+                "Delta Value"
+            ],
+            correct: 1,
+            explanation: "Premium = Intrinsic Value + Extrinsic Value. Extrinsic value is also called 'time value' and decays over time."
+        },
+        {
+            id: 11,
+            question: "An ATM option has zero intrinsic value. If the premium is $6, how much is extrinsic value?",
+            options: [
+                "$0",
+                "$3",
+                "$6",
+                "Cannot determine"
+            ],
+            correct: 2,
+            explanation: "Premium = Intrinsic + Extrinsic. Since intrinsic is $0 (ATM), the entire $6 premium is extrinsic (time value)."
+        },
+        {
+            id: 12,
+            question: "What should you check FIRST before buying an option in the options chain?",
+            options: [
+                "The color of the option",
+                "Volume and Open Interest (liquidity)",
+                "Your horoscope",
+                "The CEO's Twitter"
+            ],
+            correct: 1,
+            explanation: "Always check liquidity first (Volume > 100, OI > 500). Without liquidity, you'll face wide spreads and slippage."
+        }
+    ],
+    answers: {},
+
+    init() {
+        console.log('Initializing Module 1 Quiz');
+        this.renderQuestions();
+    },
+
+    renderQuestions() {
+        const container = document.getElementById('quiz-container');
+
+        container.innerHTML = this.questions.map(q => `
+            <div class="card mb-3" id="question-${q.id}" style="border: 2px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; font-size: 1.125rem; color: var(--text-primary);">Question ${q.id} of 12</h3>
+                    <span id="status-${q.id}" style="font-size: 0.875rem; color: var(--text-muted);">Not answered</span>
+                </div>
+
+                <p style="font-size: 1rem; font-weight: bold; margin-bottom: 1rem; line-height: 1.6;">
+                    ${q.question}
+                </p>
+
+                <div style="display: grid; gap: 0.75rem;">
+                    ${q.options.map((option, index) => `
+                        <button
+                            class="btn btn-secondary"
+                            style="text-align: left; padding: 1rem; font-size: 0.9375rem;"
+                            id="q${q.id}-opt${index}"
+                            onclick="Module1Quiz.selectAnswer(${q.id}, ${index})">
+                            ${String.fromCharCode(65 + index)}) ${option}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    },
+
+    selectAnswer(questionId, optionIndex) {
+        // Store answer
+        this.answers[questionId] = optionIndex;
+
+        // Update button states for this question
+        const question = this.questions.find(q => q.id === questionId);
+        question.options.forEach((_, i) => {
+            const btn = document.getElementById(`q${questionId}-opt${i}`);
+            if (i === optionIndex) {
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            }
+        });
+
+        // Update status
+        document.getElementById(`status-${questionId}`).innerHTML =
+            '<span style="color: var(--success-color);">✓ Answered</span>';
+
+        // Update progress
+        this.updateProgress();
+    },
+
+    updateProgress() {
+        const answered = Object.keys(this.answers).length;
+        const total = this.questions.length;
+        const percent = (answered / total) * 100;
+
+        document.getElementById('quiz-progress-text').textContent = `${answered} / ${total} answered`;
+        document.getElementById('quiz-progress-bar').style.width = `${percent}%`;
+
+        // Show submit button if all answered
+        if (answered === total) {
+            document.getElementById('submit-container').style.display = 'block';
+            document.getElementById('submit-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    },
+
+    submitQuiz() {
+        // Calculate score
+        let correct = 0;
+        this.questions.forEach(q => {
+            if (this.answers[q.id] === q.correct) {
+                correct++;
+            }
+        });
+
+        const total = this.questions.length;
+        const percentage = (correct / total) * 100;
+        const passed = percentage >= 70;
+
+        // Show results
+        this.showResults(correct, total, percentage, passed);
+
+        // If passed, update progress
+        if (passed) {
+            this.saveQuizCompletion();
+        }
+    },
+
+    showResults(correct, total, percentage, passed) {
+        const resultsContent = document.getElementById('results-content');
+
+        const statusColor = passed ? 'var(--success-color)' : 'var(--danger-color)';
+        const statusIcon = passed ? '🎉' : '📚';
+        const statusText = passed ? 'PASSED!' : 'Not Quite...';
+
+        let html = `
+            <div style="text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">${statusIcon}</div>
+                <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: ${statusColor};">${statusText}</h2>
+                <div style="font-size: 3rem; font-weight: bold; color: var(--primary); margin-bottom: 0.5rem;">
+                    ${correct} / ${total}
+                </div>
+                <div style="font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 2rem;">
+                    ${percentage.toFixed(0)}% Correct
+                </div>
+            </div>
+
+            <div style="background: ${passed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+                        border: 2px solid ${statusColor};
+                        border-radius: 0.5rem;
+                        padding: 1.5rem;
+                        margin-bottom: 2rem;">
+                ${passed ? `
+                    <h3 style="color: var(--success-color); margin-top: 0;">🏆 Module 1 Complete!</h3>
+                    <p style="margin: 0.5rem 0; line-height: 1.6; color: var(--text-secondary);">
+                        Congratulations! You've mastered options basics and unlocked:
+                    </p>
+                    <ul style="margin: 0.5rem 0; color: var(--text-secondary); line-height: 1.8;">
+                        <li><strong style="color: var(--success-color);">+250 XP</strong> (first time bonus)</li>
+                        <li><strong style="color: var(--primary);">Confidence threshold slider</strong> in Settings</li>
+                        <li><strong style="color: var(--accent);">Module 2: The Greeks</strong> now unlocked!</li>
+                    </ul>
+                ` : `
+                    <h3 style="color: var(--danger-color); margin-top: 0;">Keep Learning!</h3>
+                    <p style="margin: 0; line-height: 1.6; color: var(--text-secondary);">
+                        You need 70% (9/12) to pass. Review the lessons and try again - you can retake as many times as needed!
+                    </p>
+                `}
+            </div>
+
+            <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📝 Answer Review</h3>
+            <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                ${this.questions.map(q => {
+                    const userAnswer = this.answers[q.id];
+                    const isCorrect = userAnswer === q.correct;
+                    return `
+                        <div style="background: var(--darker-bg);
+                                    border-left: 4px solid ${isCorrect ? 'var(--success-color)' : 'var(--danger-color)'};
+                                    padding: 1rem;
+                                    border-radius: 0.25rem;
+                                    margin-bottom: 1rem;">
+                            <div style="font-weight: bold; margin-bottom: 0.5rem;">
+                                ${isCorrect ? '✓' : '✗'} Question ${q.id}: ${q.question}
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">
+                                <strong>Your answer:</strong> ${String.fromCharCode(65 + userAnswer)}) ${q.options[userAnswer]}<br>
+                                ${!isCorrect ? `<strong style="color: var(--success-color);">Correct answer:</strong> ${String.fromCharCode(65 + q.correct)}) ${q.options[q.correct]}<br>` : ''}
+                                <em>${q.explanation}</em>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                ${passed ? `
+                    <button class="btn btn-primary" style="font-size: 1.125rem; padding: 0.75rem 1.5rem;" onclick="Module1Quiz.returnToAcademy()">
+                        🎓 Return to Academy
+                    </button>
+                ` : `
+                    <button class="btn btn-primary" style="padding: 0.75rem 1.5rem;" onclick="Module1Quiz.retakeQuiz()">
+                        🔄 Retake Quiz
+                    </button>
+                    <button class="btn btn-secondary" style="padding: 0.75rem 1.5rem;" onclick="Module1Quiz.returnToAcademy()">
+                        📚 Review Lessons
+                    </button>
+                `}
+            </div>
+        `;
+
+        resultsContent.innerHTML = html;
+        document.getElementById('results-modal').style.display = 'block';
+        document.getElementById('results-modal').scrollTop = 0;
+    },
+
+    saveQuizCompletion() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        let progress = saved ? JSON.parse(saved) : {
+            level: 1, totalXP: 0, completedModules: [], completedLessons: [],
+            completedQuizzes: [], achievements: [], currentModule: 'module-1', currentLesson: null
+        };
+
+        const quizId = 'module-1-quiz';
+
+        // Only award XP and unlock on first completion
+        if (!progress.completedQuizzes.includes(quizId)) {
+            progress.completedQuizzes.push(quizId);
+            progress.totalXP += 250; // Big reward for completing quiz
+
+            // Mark Module 1 as fully completed
+            if (!progress.completedModules.includes('module-1')) {
+                progress.completedModules.push('module-1');
+            }
+
+            // Add achievement
+            if (!progress.achievements.some(a => a.name === 'Quiz Master')) {
+                progress.achievements.push({
+                    icon: '🎯',
+                    name: 'Quiz Master',
+                    description: 'Passed Module 1 Quiz with 70%+',
+                    earnedAt: new Date().toISOString()
+                });
+            }
+
+            // Unlock Module 2
+            progress.currentModule = 'module-2';
+
+            localStorage.setItem('tradefly_learn_progress', JSON.stringify(progress));
+        }
+    },
+
+    retakeQuiz() {
+        this.answers = {};
+        document.getElementById('results-modal').style.display = 'none';
+        document.getElementById('submit-container').style.display = 'none';
+        this.renderQuestions();
+        this.updateProgress();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    returnToAcademy() {
+        window.location.href = '/learn';
+    }
+};
+
+Module1Quiz.init();
+</script>

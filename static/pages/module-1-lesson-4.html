@@ -1,0 +1,248 @@
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">📖 Module 1: Options Basics</h1>
+            <p class="page-subtitle">Lesson 4: Reading Options Chains</p>
+        </div>
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back to Academy</button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson Progress</span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson 4 of 5</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 80%; transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-top: 0;">Reading Options Chains</h2>
+
+    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 2rem;">
+        An <strong style="color: var(--text-primary);">options chain</strong> is a table showing all available options contracts for a stock,
+        organized by expiration date and strike price. It's the "menu" where you select which contract to trade.
+    </p>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">🗂️ Key Columns in an Options Chain</h3>
+
+    <div style="background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; overflow-x: auto;">
+        <table style="width: 100%; color: var(--text-secondary); font-size: 0.875rem; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                    <th style="text-align: left; padding: 0.75rem; color: var(--text-primary);">Column</th>
+                    <th style="text-align: left; padding: 0.75rem; color: var(--text-primary);">What It Means</th>
+                    <th style="text-align: left; padding: 0.75rem; color: var(--text-primary);">Why It Matters</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;"><strong style="color: var(--success-color);">Bid</strong></td>
+                    <td style="padding: 0.75rem;">Highest price buyers will pay</td>
+                    <td style="padding: 0.75rem;">Price you'll GET when selling</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;"><strong style="color: var(--danger-color);">Ask</strong></td>
+                    <td style="padding: 0.75rem;">Lowest price sellers will accept</td>
+                    <td style="padding: 0.75rem;">Price you'll PAY when buying</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;"><strong style="color: var(--primary);">Volume</strong></td>
+                    <td style="padding: 0.75rem;">Contracts traded today</td>
+                    <td style="padding: 0.75rem;">Shows current trading activity</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;"><strong style="color: var(--accent);">Open Interest</strong></td>
+                    <td style="padding: 0.75rem;">Total contracts still open</td>
+                    <td style="padding: 0.75rem;">Liquidity indicator (want 100+)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;"><strong>IV (Implied Vol)</strong></td>
+                    <td style="padding: 0.75rem;">Market's expected volatility</td>
+                    <td style="padding: 0.75rem;">Higher IV = more expensive options</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.75rem;"><strong>Delta</strong></td>
+                    <td style="padding: 0.75rem;">$ change per $1 stock move</td>
+                    <td style="padding: 0.75rem;">Probability & sensitivity measure</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--primary);">🔑 Bid-Ask Spread: The Hidden Cost</h3>
+        <p style="margin: 0; line-height: 1.6;">
+            The difference between bid and ask is your transaction cost. A $5.00 bid / $5.20 ask means you pay $0.20 extra (4% slippage).
+            <br><strong>Rule:</strong> Only trade options with spreads under 5-10% of the option price. Tight spreads = liquid, wide spreads = avoid!
+        </p>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📊 Sample Options Chain (AAPL at $150)</h3>
+
+    <div style="background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 2rem; overflow-x: auto;">
+        <div style="text-align: center; margin-bottom: 1rem; color: var(--primary); font-weight: bold;">CALLS (Bullish)</div>
+        <table style="width: 100%; color: var(--text-secondary); font-size: 0.875rem; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 0.5rem;">Strike</th>
+                    <th style="padding: 0.5rem;">Bid</th>
+                    <th style="padding: 0.5rem;">Ask</th>
+                    <th style="padding: 0.5rem;">Volume</th>
+                    <th style="padding: 0.5rem;">OI</th>
+                    <th style="padding: 0.5rem;">IV</th>
+                    <th style="padding: 0.5rem;">Delta</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background: rgba(16, 185, 129, 0.1);">
+                    <td style="padding: 0.5rem; text-align: center;"><strong>$145</strong></td>
+                    <td style="padding: 0.5rem; text-align: center;">$7.50</td>
+                    <td style="padding: 0.5rem; text-align: center;">$7.60</td>
+                    <td style="padding: 0.5rem; text-align: center;">850</td>
+                    <td style="padding: 0.5rem; text-align: center;">3,200</td>
+                    <td style="padding: 0.5rem; text-align: center;">28%</td>
+                    <td style="padding: 0.5rem; text-align: center; color: var(--success-color);">0.68</td>
+                </tr>
+                <tr style="background: rgba(99, 102, 241, 0.1);">
+                    <td style="padding: 0.5rem; text-align: center;"><strong>$150</strong></td>
+                    <td style="padding: 0.5rem; text-align: center;">$4.10</td>
+                    <td style="padding: 0.5rem; text-align: center;">$4.20</td>
+                    <td style="padding: 0.5rem; text-align: center;">1,500</td>
+                    <td style="padding: 0.5rem; text-align: center;">5,800</td>
+                    <td style="padding: 0.5rem; text-align: center;">30%</td>
+                    <td style="padding: 0.5rem; text-align: center; color: var(--primary);">0.50</td>
+                </tr>
+                <tr style="background: rgba(239, 68, 68, 0.1);">
+                    <td style="padding: 0.5rem; text-align: center;"><strong>$155</strong></td>
+                    <td style="padding: 0.5rem; text-align: center;">$1.80</td>
+                    <td style="padding: 0.5rem; text-align: center;">$1.95</td>
+                    <td style="padding: 0.5rem; text-align: center;">620</td>
+                    <td style="padding: 0.5rem; text-align: center;">2,100</td>
+                    <td style="padding: 0.5rem; text-align: center;">32%</td>
+                    <td style="padding: 0.5rem; text-align: center; color: var(--danger-color);">0.30</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+            <strong>Analysis:</strong> $150 strike has best liquidity (highest OI). $145 is ITM (green), $150 is ATM (blue), $155 is OTM (red).
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">✅ What to Look For</h3>
+
+    <div style="display: grid; gap: 1rem; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: start; gap: 1rem;">
+            <span style="font-size: 1.5rem;">💧</span>
+            <div>
+                <strong style="color: var(--text-primary);">High Liquidity (Volume & OI)</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Look for volume > 100 and open interest > 500. This ensures you can enter/exit easily without slippage.
+                </p>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: start; gap: 1rem;">
+            <span style="font-size: 1.5rem;">📏</span>
+            <div>
+                <strong style="color: var(--text-primary);">Tight Bid-Ask Spread</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Spread should be < $0.10 for cheap options, < 5% for expensive ones. Wide spreads eat your profits.
+                </p>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: start; gap: 1rem;">
+            <span style="font-size: 1.5rem;">📈</span>
+            <div>
+                <strong style="color: var(--text-primary);">Appropriate Delta</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    For directional trades: 0.30-0.70 delta. Higher delta = more like owning stock, lower = cheaper lottery ticket.
+                </p>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: start; gap: 1rem;">
+            <span style="font-size: 1.5rem;">⚡</span>
+            <div>
+                <strong style="color: var(--text-primary);">Check IV Percentile</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Avoid buying when IV is at 52-week highs (expensive). Prefer buying when IV is low/normal.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--success-color);">✅ Quick Chain Reading Checklist</h3>
+        <ol style="margin: 0; line-height: 1.8; color: var(--text-secondary); padding-left: 1.25rem;">
+            <li>Select your expiration date (give yourself time)</li>
+            <li>Choose ATM or 1 strike OTM for best risk/reward</li>
+            <li>Verify volume > 100 and OI > 500 (liquidity check)</li>
+            <li>Check bid-ask spread is tight (< 5% of option price)</li>
+            <li>Confirm delta is in your target range (0.30-0.70 for directional)</li>
+            <li>Buy at the ASK price (or split the spread with limit order)</li>
+        </ol>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem; border: 2px solid var(--accent);">
+    <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--accent);">💡 Knowledge Check</h3>
+    <div style="margin-bottom: 1rem;">
+        <p style="font-weight: bold; margin-bottom: 0.5rem;">You want to buy an AAPL $150 call. The bid is $4.10 and the ask is $4.20. What price do you pay?</p>
+        <div style="display: grid; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson4.checkAnswer(this, false)">A) $4.10 (the bid)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson4.checkAnswer(this, true)">B) $4.20 (the ask)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson4.checkAnswer(this, false)">C) $4.15 (the midpoint)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson4.checkAnswer(this, false)">D) Whatever price I want</button>
+        </div>
+        <div id="answer-feedback" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; display: none;"></div>
+    </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <button class="btn btn-secondary" onclick="window.location.href='/module-1-lesson-3'">← Previous Lesson</button>
+    <button class="btn btn-primary" onclick="Module1Lesson4.completeLesson()">Complete Lesson & Continue →</button>
+</div>
+
+<script>
+const Module1Lesson4 = {
+    answered: false,
+    checkAnswer(button, isCorrect) {
+        if (this.answered) return;
+        this.answered = true;
+        const feedback = document.getElementById('answer-feedback');
+        feedback.style.display = 'block';
+        const buttons = button.parentElement.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (isCorrect) {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-success');
+            feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            feedback.style.border = '1px solid var(--success-color)';
+            feedback.innerHTML = '<strong style="color: var(--success-color);">✓ Correct!</strong><p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">When BUYING options, you always pay the ASK price ($4.20). The bid is what you\'d receive when SELLING. The bid-ask spread is the market maker\'s profit.</p>';
+        } else {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-danger');
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.style.border = '1px solid var(--danger-color)';
+            feedback.innerHTML = '<strong style="color: var(--danger-color);">✗ Not quite</strong><p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">The correct answer is <strong>B) $4.20 (the ask)</strong>. When buying, you pay the ASK. When selling, you receive the BID. This spread is the cost of doing business.</p>';
+        }
+    },
+    completeLesson() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        let progress = saved ? JSON.parse(saved) : {level: 1, totalXP: 0, completedModules: [], completedLessons: [], completedQuizzes: [], achievements: [], currentModule: 'module-1', currentLesson: null};
+        const lessonId = 'module-1-lesson-4';
+        if (!progress.completedLessons.includes(lessonId)) {
+            progress.completedLessons.push(lessonId);
+            progress.totalXP += 50;
+            localStorage.setItem('tradefly_learn_progress', JSON.stringify(progress));
+            alert('🎉 Lesson 4 Complete! +50 XP\n\nNext: Lesson 5 - Premium Components (Final Lesson!)');
+        }
+        window.location.href = '/module-1-lesson-5';
+    }
+};
+</script>

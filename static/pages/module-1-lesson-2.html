@@ -1,0 +1,280 @@
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">📖 Module 1: Options Basics</h1>
+            <p class="page-subtitle">Lesson 2: Calls vs Puts</p>
+        </div>
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back to Academy</button>
+    </div>
+</div>
+
+<!-- Lesson Progress -->
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson Progress</span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson 2 of 5</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 40%; transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<!-- Lesson Content -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-top: 0;">Calls vs Puts: The Two Types of Options</h2>
+
+    <div style="margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary);">
+            There are only <strong style="color: var(--text-primary);">two types</strong> of options contracts:
+        </p>
+        <ul style="line-height: 1.8; color: var(--text-secondary);">
+            <li><strong style="color: var(--success-color);">CALLS</strong> - The right to BUY stock at a strike price</li>
+            <li><strong style="color: var(--danger-color);">PUTS</strong> - The right to SELL stock at a strike price</li>
+        </ul>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--primary);">🔑 Quick Rule</h3>
+        <p style="margin: 0; line-height: 1.6;">
+            <strong>Bullish?</strong> Buy a CALL (profit when stock goes UP)<br>
+            <strong>Bearish?</strong> Buy a PUT (profit when stock goes DOWN)
+        </p>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📈 CALL Options (Bullish Bets)</h3>
+
+    <div style="background: var(--dark-bg); border: 2px solid var(--success-color); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h4 style="margin-top: 0; color: var(--success-color);">What is a CALL?</h4>
+        <p style="line-height: 1.6; color: var(--text-secondary);">
+            A call option gives you the <strong>right to BUY</strong> 100 shares of stock at the strike price, even if the market price is higher.
+        </p>
+
+        <div style="margin: 1.5rem 0; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-radius: 0.5rem;">
+            <strong style="color: var(--text-primary);">Real Example:</strong>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0.5rem 0;">
+                <li>TSLA is trading at $200</li>
+                <li>You buy a $210 call for $5 premium (30 days out)</li>
+                <li>Total cost: $500 ($5 × 100 shares)</li>
+            </ul>
+
+            <p style="margin: 1rem 0 0.5rem 0; font-weight: bold; color: var(--success-color);">Scenario 1: TSLA rallies to $230 ✅</p>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0;">
+                <li>Your call is now worth ~$20 ($230 - $210)</li>
+                <li>Sell the call for $2,000</li>
+                <li>Profit: $1,500 (300% gain!)</li>
+            </ul>
+
+            <p style="margin: 1rem 0 0.5rem 0; font-weight: bold; color: var(--danger-color);">Scenario 2: TSLA stays at $200 or drops ❌</p>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0;">
+                <li>Call expires worthless (stock never hit $210)</li>
+                <li>Loss: -$500 (the premium you paid)</li>
+                <li>You can't lose more than the premium</li>
+            </ul>
+        </div>
+
+        <p style="margin: 0; line-height: 1.6; color: var(--text-muted); font-size: 0.875rem;">
+            <strong>Key Insight:</strong> Calls are cheaper than buying stock but give similar upside. You control 100 shares for a fraction of the cost.
+        </p>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📉 PUT Options (Bearish Bets)</h3>
+
+    <div style="background: var(--dark-bg); border: 2px solid var(--danger-color); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h4 style="margin-top: 0; color: var(--danger-color);">What is a PUT?</h4>
+        <p style="line-height: 1.6; color: var(--text-secondary);">
+            A put option gives you the <strong>right to SELL</strong> 100 shares of stock at the strike price, even if the market price is lower.
+        </p>
+
+        <div style="margin: 1.5rem 0; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 0.5rem;">
+            <strong style="color: var(--text-primary);">Real Example:</strong>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0.5rem 0;">
+                <li>SPY is trading at $450</li>
+                <li>You buy a $440 put for $6 premium (14 days out)</li>
+                <li>Total cost: $600 ($6 × 100 shares)</li>
+            </ul>
+
+            <p style="margin: 1rem 0 0.5rem 0; font-weight: bold; color: var(--success-color);">Scenario 1: SPY drops to $420 ✅</p>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0;">
+                <li>Your put is now worth ~$20 ($440 - $420)</li>
+                <li>Sell the put for $2,000</li>
+                <li>Profit: $1,400 (233% gain!)</li>
+            </ul>
+
+            <p style="margin: 1rem 0 0.5rem 0; font-weight: bold; color: var(--danger-color);">Scenario 2: SPY stays at $450 or rallies ❌</p>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0;">
+                <li>Put expires worthless (stock never fell to $440)</li>
+                <li>Loss: -$600 (the premium you paid)</li>
+                <li>Maximum loss is limited to premium</li>
+            </ul>
+        </div>
+
+        <p style="margin: 0; line-height: 1.6; color: var(--text-muted); font-size: 0.875rem;">
+            <strong>Key Insight:</strong> Puts let you profit from downside moves without short-selling stock (which has unlimited risk).
+        </p>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">Calls vs Puts: Side-by-Side</h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: var(--dark-bg); border-left: 4px solid var(--success-color); padding: 1.25rem; border-radius: 0.25rem;">
+            <h4 style="margin-top: 0; color: var(--success-color);">📈 CALL Options</h4>
+            <div style="color: var(--text-secondary); line-height: 1.8;">
+                <p style="margin: 0.5rem 0;"><strong>Direction:</strong> Bullish (up)</p>
+                <p style="margin: 0.5rem 0;"><strong>Right:</strong> Buy at strike</p>
+                <p style="margin: 0.5rem 0;"><strong>Profit when:</strong> Stock rises above strike</p>
+                <p style="margin: 0.5rem 0;"><strong>Max loss:</strong> Premium paid</p>
+                <p style="margin: 0.5rem 0;"><strong>Max gain:</strong> Unlimited</p>
+                <p style="margin: 0.5rem 0;"><strong>Example:</strong> AAPL $150 Call</p>
+            </div>
+        </div>
+
+        <div style="background: var(--dark-bg); border-left: 4px solid var(--danger-color); padding: 1.25rem; border-radius: 0.25rem;">
+            <h4 style="margin-top: 0; color: var(--danger-color);">📉 PUT Options</h4>
+            <div style="color: var(--text-secondary); line-height: 1.8;">
+                <p style="margin: 0.5rem 0;"><strong>Direction:</strong> Bearish (down)</p>
+                <p style="margin: 0.5rem 0;"><strong>Right:</strong> Sell at strike</p>
+                <p style="margin: 0.5rem 0;"><strong>Profit when:</strong> Stock falls below strike</p>
+                <p style="margin: 0.5rem 0;"><strong>Max loss:</strong> Premium paid</p>
+                <p style="margin: 0.5rem 0;"><strong>Max gain:</strong> Strike price (if stock → $0)</p>
+                <p style="margin: 0.5rem 0;"><strong>Example:</strong> AAPL $150 Put</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">Common Beginner Mistakes</h3>
+
+    <div style="display: grid; gap: 0.75rem; margin-bottom: 2rem;">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 0.5rem;">
+            <strong style="color: var(--danger-color);">❌ Buying calls on stocks already way up</strong>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                Wait for pullbacks or consolidation. Chasing parabolic moves often results in buying the top.
+            </p>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 0.5rem;">
+            <strong style="color: var(--danger-color);">❌ Holding options too close to expiration</strong>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                Time decay accelerates in the last week. Take profits or cut losses before expiration week.
+            </p>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 0.5rem;">
+            <strong style="color: var(--danger-color);">❌ Buying far out-of-the-money (OTM) options</strong>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                "Lottery ticket" options are cheap but rarely pay off. Stick to at-the-money or near-the-money strikes.
+            </p>
+        </div>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--success-color);">✅ Pro Tips</h3>
+        <ul style="margin: 0; line-height: 1.8; color: var(--text-secondary);">
+            <li>Start with calls in bull markets - easier to understand and track</li>
+            <li>Use puts as "insurance" on your stock holdings (protective puts)</li>
+            <li>Check IV (implied volatility) before buying - high IV means expensive premiums</li>
+            <li>Don't buy options right before earnings unless you know what you're doing</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Knowledge Check -->
+<div class="card" style="margin-bottom: 2rem; border: 2px solid var(--accent);">
+    <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--accent);">💡 Knowledge Check</h3>
+
+    <div style="margin-bottom: 1rem;">
+        <p style="font-weight: bold; margin-bottom: 0.5rem;">You think NVDA will drop from $500 to $450 in the next 2 weeks. Which option should you buy?</p>
+        <div style="display: grid; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson2.checkAnswer(this, false)">
+                A) NVDA $490 Call
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson2.checkAnswer(this, true)">
+                B) NVDA $490 Put
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson2.checkAnswer(this, false)">
+                C) NVDA $510 Call
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson2.checkAnswer(this, false)">
+                D) Buy NVDA shares and hold
+            </button>
+        </div>
+        <div id="answer-feedback" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; display: none;"></div>
+    </div>
+</div>
+
+<!-- Lesson Navigation -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <button class="btn btn-secondary" onclick="window.location.href='/module-1-lesson-1'">
+        ← Previous Lesson
+    </button>
+    <button class="btn btn-primary" id="next-lesson-btn" onclick="Module1Lesson2.completeLesson()">
+        Complete Lesson & Continue →
+    </button>
+</div>
+
+<script>
+const Module1Lesson2 = {
+    answered: false,
+
+    checkAnswer(button, isCorrect) {
+        if (this.answered) return;
+
+        this.answered = true;
+        const feedback = document.getElementById('answer-feedback');
+        feedback.style.display = 'block';
+
+        const buttons = button.parentElement.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (isCorrect) {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-success');
+            feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            feedback.style.border = '1px solid var(--success-color)';
+            feedback.innerHTML = `
+                <strong style="color: var(--success-color);">✓ Correct!</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    Since you think NVDA will go DOWN, you need a PUT option. The $490 put lets you profit
+                    as the stock falls from $500 toward $450. Calls profit from upside moves only.
+                </p>
+            `;
+        } else {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-danger');
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.style.border = '1px solid var(--danger-color)';
+            feedback.innerHTML = `
+                <strong style="color: var(--danger-color);">✗ Not quite</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    The correct answer is <strong>B) NVDA $490 Put</strong>. When you're bearish (expect stock to fall),
+                    you buy PUT options. Calls are for bullish bets only.
+                </p>
+            `;
+        }
+    },
+
+    completeLesson() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        let progress = saved ? JSON.parse(saved) : {
+            level: 1,
+            totalXP: 0,
+            completedModules: [],
+            completedLessons: [],
+            completedQuizzes: [],
+            achievements: [],
+            currentModule: 'module-1',
+            currentLesson: null
+        };
+
+        const lessonId = 'module-1-lesson-2';
+        if (!progress.completedLessons.includes(lessonId)) {
+            progress.completedLessons.push(lessonId);
+            progress.totalXP += 50;
+
+            localStorage.setItem('tradefly_learn_progress', JSON.stringify(progress));
+            alert('🎉 Lesson 2 Complete! +50 XP\n\nNext: Lesson 3 - Strike Prices & Expiration');
+        }
+
+        window.location.href = '/module-1-lesson-3';
+    }
+};
+</script>

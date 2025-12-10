@@ -3,6 +3,18 @@
     <p class="page-subtitle">Fast 0-7 DTE options plays | Quick entries and exits</p>
 </div>
 
+<!-- Market Status Banner -->
+<div id="market-status-banner" style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color);">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div id="market-status-icon" style="font-size: 1.5rem;">⏳</div>
+        <div>
+            <div id="market-status-text" style="font-weight: 600; font-size: 0.875rem;">Checking market status...</div>
+            <div id="market-status-time" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Loading...</div>
+        </div>
+    </div>
+    <div id="market-countdown" style="font-family: monospace; font-size: 0.875rem; font-weight: 600;"></div>
+</div>
+
 <!-- Stats Summary -->
 <div class="stats-grid">
     <div class="stat-card">
@@ -25,15 +37,31 @@
 
 <!-- Controls -->
 <div class="card mb-3">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <label style="color: var(--text-secondary); margin-right: 1rem;">Min Confidence:</label>
-            <select id="scalp-min-confidence" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
-                <option value="0.80">80%</option>
-                <option value="0.85" selected>85%</option>
-                <option value="0.90">90%</option>
-                <option value="0.95">95%</option>
-            </select>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+            <div>
+                <label style="color: var(--text-secondary); margin-right: 0.5rem;">Min Confidence:</label>
+                <select id="scalp-min-confidence" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
+                    <option value="0.70" selected>70%</option>
+                    <option value="0.75">75%</option>
+                    <option value="0.80">80%</option>
+                    <option value="0.85">85%</option>
+                    <option value="0.90">90%</option>
+                    <option value="0.95">95%</option>
+                </select>
+            </div>
+            <div>
+                <label style="color: var(--text-secondary); margin-right: 0.5rem;">Max Entry Price:</label>
+                <select id="scalp-max-price" style="padding: 0.5rem; border-radius: 0.375rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color);">
+                    <option value="0.50">$0.50</option>
+                    <option value="1.00">$1.00</option>
+                    <option value="2.00">$2.00</option>
+                    <option value="3.00">$3.00</option>
+                    <option value="5.00" selected>$5.00</option>
+                    <option value="10.00">$10.00</option>
+                    <option value="50.00">$50.00</option>
+                </select>
+            </div>
         </div>
         <button class="btn btn-primary" id="scalp-refresh-btn">🔄 Refresh Signals</button>
     </div>
@@ -48,7 +76,8 @@
 // Scalping Page Logic
 const ScalpingPage = {
     signals: [],
-    minConfidence: 0.85,
+    minConfidence: 0.70,
+    maxPrice: 5.00,
 
     async init() {
         console.log('Initializing Scalping page');
@@ -59,18 +88,119 @@ const ScalpingPage = {
             this.minConfidence = parseFloat(e.target.value);
             this.loadSignals();
         });
+        document.getElementById('scalp-max-price').addEventListener('change', (e) => {
+            this.maxPrice = parseFloat(e.target.value);
+            this.loadSignals();
+        });
 
         // Load initial data
+        await this.loadMarketStatus();
         await this.loadSignals();
         await this.loadStats();
 
         // Auto-refresh every 30 seconds
         setInterval(() => this.loadSignals(), 30000);
+
+        // Update market status every 60 seconds
+        setInterval(() => this.loadMarketStatus(), 60000);
+
+        // Update countdown every second
+        setInterval(() => this.updateCountdown(), 1000);
+    },
+
+    async loadMarketStatus() {
+        try {
+            const response = await fetch('/api/market/status');
+            const status = await response.json();
+
+            const banner = document.getElementById('market-status-banner');
+            const icon = document.getElementById('market-status-icon');
+            const text = document.getElementById('market-status-text');
+            const time = document.getElementById('market-status-time');
+
+            // Store status for countdown
+            this.marketStatus = status;
+
+            if (status.session === 'REGULAR') {
+                // Market is open
+                banner.style.border = '2px solid var(--success-color)';
+                banner.style.background = 'rgba(34, 197, 94, 0.1)';
+                icon.textContent = '🟢';
+                text.textContent = 'Market is OPEN';
+                text.style.color = 'var(--success-color)';
+                time.textContent = `Closes at ${status.market_close}`;
+            } else if (status.session === 'PRE_MARKET') {
+                banner.style.border = '2px solid var(--warning-color)';
+                banner.style.background = 'rgba(251, 191, 36, 0.1)';
+                icon.textContent = '🟡';
+                text.textContent = 'Pre-Market';
+                text.style.color = 'var(--warning-color)';
+                time.textContent = `Market opens at ${status.market_open}`;
+            } else if (status.session === 'AFTER_HOURS') {
+                banner.style.border = '2px solid var(--warning-color)';
+                banner.style.background = 'rgba(251, 191, 36, 0.1)';
+                icon.textContent = '🟡';
+                text.textContent = 'After Hours';
+                text.style.color = 'var(--warning-color)';
+                time.textContent = `Market opens tomorrow at ${status.market_open}`;
+            } else {
+                // Market is closed
+                banner.style.border = '2px solid var(--error-color)';
+                banner.style.background = 'rgba(239, 68, 68, 0.1)';
+                icon.textContent = '🔴';
+                text.textContent = 'Market is CLOSED';
+                text.style.color = 'var(--error-color)';
+                time.textContent = status.next_open ? `Opens ${status.next_open}` : 'Closed for weekend';
+            }
+        } catch (error) {
+            console.error('Error loading market status:', error);
+        }
+    },
+
+    updateCountdown() {
+        if (!this.marketStatus) return;
+
+        const countdown = document.getElementById('market-countdown');
+        if (!countdown) return;
+
+        const now = new Date();
+        let targetTime;
+
+        if (this.marketStatus.session === 'REGULAR') {
+            // Countdown to market close
+            targetTime = new Date(now.toDateString() + ' ' + this.marketStatus.market_close);
+        } else {
+            // Countdown to market open
+            const openTime = this.marketStatus.market_open;
+            targetTime = new Date(now.toDateString() + ' ' + openTime);
+
+            // If open time is in the past, it's tomorrow
+            if (targetTime < now) {
+                targetTime = new Date(targetTime.getTime() + 24 * 60 * 60 * 1000);
+            }
+        }
+
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+            countdown.textContent = '';
+            return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (this.marketStatus.session === 'REGULAR') {
+            countdown.textContent = `Closes in ${hours}h ${minutes}m ${seconds}s`;
+        } else {
+            countdown.textContent = `Opens in ${hours}h ${minutes}m ${seconds}s`;
+        }
     },
 
     async loadSignals() {
         try {
-            const response = await fetch(`/api/options/signals?strategy=SCALPING&min_confidence=${this.minConfidence}&max_results=20`);
+            const response = await fetch(`/api/options/signals?strategy=SCALPING&min_confidence=${this.minConfidence}&max_price=${this.maxPrice}&max_results=20`);
             const rawSignals = await response.json();
 
             // Transform API response to flatten nested structure
@@ -154,74 +284,6 @@ const ScalpingPage = {
                 btn.addEventListener('click', () => this.quickAddToPaper(signal));
             }
         });
-
-        // Initialize mini charts for each signal
-        signals.forEach(signal => {
-            this.loadMiniChart(signal);
-        });
-    },
-
-    async loadMiniChart(signal) {
-        const chartId = `chart-${signal.signal_id}`;
-        const container = document.getElementById(chartId);
-
-        if (!container) {
-            console.warn(`Chart container ${chartId} not found`);
-            return;
-        }
-
-        try {
-            // Fetch price data for the symbol
-            const priceData = await TradeFlyCharts.fetchPriceData(signal.symbol, '1Day', 30);
-
-            if (!priceData || priceData.length === 0) {
-                // Use demo data if real data not available
-                console.log(`Using demo data for ${signal.symbol}`);
-                const demoData = TradeFlyCharts.generateDemoData(signal.contract?.underlying_price || 100, 30);
-
-                const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
-                    width: container.clientWidth,
-                    height: 150
-                });
-
-                if (chart) {
-                    chart.updateData(demoData.candleData);
-                }
-                return;
-            }
-
-            // Create chart with real data
-            const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
-                width: container.clientWidth,
-                height: 150
-            });
-
-            if (chart) {
-                // Transform and load data
-                const { candleData } = TradeFlyCharts.transformPriceData(priceData);
-                chart.updateData(candleData);
-
-                // Add entry/target/stop price lines
-                if (signal.contract?.underlying_price) {
-                    const currentPrice = signal.contract.underlying_price;
-                    // These are visual markers, not functional price lines
-                    // Price lines would need to be added to the chart instance
-                }
-            }
-        } catch (error) {
-            console.error(`Error loading chart for ${signal.symbol}:`, error);
-
-            // Fallback to demo data
-            const demoData = TradeFlyCharts.generateDemoData(signal.contract?.underlying_price || 100, 30);
-            const chart = TradeFlyCharts.createMiniChart(chartId, signal.symbol, {
-                width: container.clientWidth,
-                height: 150
-            });
-
-            if (chart) {
-                chart.updateData(demoData.candleData);
-            }
-        }
     },
 
     renderSignalCard(signal) {
@@ -248,11 +310,6 @@ const ScalpingPage = {
                             ${(signal.confidence * 100).toFixed(0)}% Confidence
                         </div>
                     </div>
-                </div>
-
-                <!-- Mini Price Chart -->
-                <div style="margin: 1rem 0; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem;">
-                    <div id="chart-${signal.signal_id}" style="width: 100%; height: 150px;"></div>
                 </div>
 
                 <div class="signal-details">

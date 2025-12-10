@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
@@ -40,6 +40,11 @@ market_data_api: Optional[PolygonMarketDataService] = None
 signal_detector: Optional[OptionsSignalDetector] = None
 paper_trading: Optional[PaperTradingEngine] = None
 position_tracker: Optional[PositionTracker] = None
+
+# Signal cache - dramatically improves performance (30-second TTL)
+# Key: (watchlist_str, strategy_str, min_confidence)
+# Value: (signals, timestamp)
+signals_cache = {}
 
 # Default watchlist - COMPREHENSIVE mix of affordable and premium stocks
 DEFAULT_WATCHLIST = [
@@ -246,16 +251,18 @@ async def get_signals(
     symbols: Optional[str] = None,
     strategy: Optional[StrategyType] = None,
     min_confidence: float = 0.80,
-    max_results: int = 20
+    max_results: int = 20,
+    max_price: float = 5.0  # NEW: Max entry price per share (default $5)
 ):
     """
-    Get current options trading signals
+    Get current options trading signals (with 30-second caching)
 
     Args:
         symbols: Comma-separated symbols (e.g., "NVDA,TSLA,AAPL")
         strategy: Specific strategy to filter (SCALPING, MOMENTUM, VOLUME_SPIKE)
         min_confidence: Minimum confidence threshold (0-1)
         max_results: Maximum number of signals to return
+        max_price: Maximum entry price per share (default $5.00)
 
     Returns:
         List of OptionsSignal objects
@@ -265,12 +272,36 @@ async def get_signals(
 
     # Parse watchlist
     watchlist = symbols.split(",") if symbols else DEFAULT_WATCHLIST
+    watchlist_str = ",".join(sorted(watchlist))  # Sort for consistent cache keys
 
     # Get strategies to run
     strategies = [strategy] if strategy else None
+    strategy_str = strategy.value if strategy else "ALL"
+
+    # Create cache key
+    cache_key = (watchlist_str, strategy_str, min_confidence)
+
+    # Check cache (30-second TTL)
+    now = datetime.now()
+    if cache_key in signals_cache:
+        cached_signals, cached_time = signals_cache[cache_key]
+        age_seconds = (now - cached_time).total_seconds()
+
+        if age_seconds < 30:
+            logger.info(f"⚡ Cache HIT - Returning {len(cached_signals)} signals (age: {age_seconds:.1f}s)")
+            # Still auto-log to paper trading
+            if paper_trading:
+                for signal in cached_signals[:max_results]:
+                    try:
+                        paper_trading.add_signal(signal)
+                    except Exception as e:
+                        pass  # Silently ignore duplicates
+            return cached_signals[:max_results]
+
+    logger.info(f"🔄 Cache MISS - Scanning {len(watchlist)} symbols...")
 
     try:
-        # Scan for signals
+        # Scan for signals (expensive operation)
         signals = signal_detector.scan_for_signals(
             watchlist=watchlist,
             strategies=strategies
@@ -282,9 +313,21 @@ async def get_signals(
             if s.confidence >= min_confidence
         ]
 
+        # Filter by max entry price (NEW)
+        price_filtered_signals = [
+            s for s in filtered_signals
+            if s.entry_price <= max_price
+        ]
+
+        logger.info(f"📊 Filtered: {len(signals)} total → {len(filtered_signals)} by confidence → {len(price_filtered_signals)} by price (≤${max_price})")
+
+        # Store in cache
+        signals_cache[cache_key] = (price_filtered_signals, now)
+        logger.info(f"✅ Cached {len(price_filtered_signals)} signals for 30 seconds")
+
         # Auto-log filtered signals to paper trading
         if paper_trading:
-            for signal in filtered_signals[:max_results]:
+            for signal in price_filtered_signals[:max_results]:
                 try:
                     paper_trading.add_signal(signal)
                     logger.debug(f"Auto-logged signal {signal.signal_id} to paper trading")
@@ -292,7 +335,7 @@ async def get_signals(
                     logger.warning(f"Failed to auto-log signal {signal.signal_id}: {e}")
 
         # Limit results
-        return filtered_signals[:max_results]
+        return price_filtered_signals[:max_results]
 
     except Exception as e:
         logger.error(f"Error generating signals: {e}")

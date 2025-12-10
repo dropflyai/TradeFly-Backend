@@ -1,0 +1,273 @@
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">📖 Module 1: Options Basics</h1>
+            <p class="page-subtitle">Lesson 3: Strike Prices & Expiration</p>
+        </div>
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back to Academy</button>
+    </div>
+</div>
+
+<!-- Lesson Progress -->
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson Progress</span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson 3 of 5</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 60%; transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<!-- Lesson Content -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-top: 0;">Strike Prices & Expiration Dates</h2>
+
+    <div style="margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary);">
+            Every options contract has two critical parameters that determine its value and probability of profit:
+        </p>
+        <ul style="line-height: 1.8; color: var(--text-secondary);">
+            <li><strong style="color: var(--text-primary);">Strike Price</strong> - The agreed-upon price to buy/sell the stock</li>
+            <li><strong style="color: var(--text-primary);">Expiration Date</strong> - When the contract expires (measured in DTE)</li>
+        </ul>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">🎯 Understanding Strike Prices</h3>
+
+    <div style="background: var(--dark-bg); border: 2px solid var(--primary); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem;">
+            The <strong style="color: var(--primary);">strike price</strong> is the price at which you can buy (call) or sell (put) the underlying stock.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--success-color); font-size: 1rem;">ITM (In-The-Money)</h4>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    <strong>Call:</strong> Strike < Stock Price<br>
+                    <strong>Put:</strong> Strike > Stock Price<br>
+                    <strong>Has intrinsic value</strong>
+                </p>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.3);">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--primary); font-size: 1rem;">ATM (At-The-Money)</h4>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Strike ≈ Stock Price<br>
+                    <strong>Balanced risk/reward</strong><br>
+                    Most liquid options
+                </p>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--danger-color); font-size: 1rem;">OTM (Out-of-The-Money)</h4>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    <strong>Call:</strong> Strike > Stock Price<br>
+                    <strong>Put:</strong> Strike < Stock Price<br>
+                    <strong>Only time value</strong>
+                </p>
+            </div>
+        </div>
+
+        <div style="background: rgba(99, 102, 241, 0.05); padding: 1rem; border-radius: 0.5rem; border-left: 4px solid var(--primary);">
+            <strong style="color: var(--text-primary);">Example: AAPL trading at $150</strong>
+            <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0.5rem 0 0 0;">
+                <li><strong>$140 Call</strong> = ITM (in-the-money) - costs more, higher probability</li>
+                <li><strong>$150 Call</strong> = ATM (at-the-money) - balanced, most active</li>
+                <li><strong>$160 Call</strong> = OTM (out-of-the-money) - costs less, lower probability</li>
+            </ul>
+        </div>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--primary);">🔑 Strike Selection Strategy</h3>
+        <ul style="margin: 0; line-height: 1.8; color: var(--text-secondary);">
+            <li><strong>ITM options</strong> - More expensive, act more like stock, safer</li>
+            <li><strong>ATM options</strong> - Best balance of cost and profit potential</li>
+            <li><strong>OTM options</strong> - Cheap "lottery tickets", high risk, low probability</li>
+        </ul>
+        <p style="margin: 1rem 0 0 0; color: var(--text-muted); font-size: 0.875rem;">
+            <strong>Beginner tip:</strong> Start with ATM or slightly ITM strikes for higher success rates.
+        </p>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📅 Expiration Dates & DTE</h3>
+
+    <div style="background: var(--dark-bg); border: 2px solid var(--accent); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem;">
+            <strong style="color: var(--accent);">DTE (Days To Expiration)</strong> measures how much time remains before your option expires and becomes worthless.
+        </p>
+
+        <div style="display: grid; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-left: 4px solid var(--danger-color); border-radius: 0.25rem;">
+                <strong style="color: var(--danger-color);">0-7 DTE (Zero/Same Week)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Ultra-short term, extreme time decay, for scalping only. Used in TradeFly's Scalping strategy.
+                </p>
+            </div>
+
+            <div style="background: rgba(251, 191, 36, 0.1); padding: 1rem; border-left: 4px solid var(--warning-color); border-radius: 0.25rem;">
+                <strong style="color: var(--warning-color);">7-30 DTE (Weekly to Monthly)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Short-term directional plays, moderate decay. Sweet spot for most day traders.
+                </p>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-left: 4px solid var(--primary); border-radius: 0.25rem;">
+                <strong style="color: var(--primary);">30-60 DTE (Swing Trading)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Medium-term holds, slower decay, more time to be right. TradeFly's Swing strategy range.
+                </p>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-left: 4px solid var(--success-color); border-radius: 0.25rem;">
+                <strong style="color: var(--success-color);">60+ DTE (LEAPS)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Long-term positions, minimal decay initially, higher cost. Acts similar to stock ownership.
+                </p>
+            </div>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 0.5rem;">
+            <strong style="color: var(--danger-color);">⚠️ Time Decay Warning</strong>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                Options lose value every day due to <strong>theta (time decay)</strong>. The closer to expiration, the faster they decay.
+                The last 30 days are brutal - decay accelerates exponentially!
+            </p>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📊 Real Trading Scenarios</h3>
+
+    <div style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem;">
+            <h4 style="margin-top: 0; color: var(--success-color);">✅ Good Strike/DTE Selection</h4>
+            <p style="color: var(--text-secondary); line-height: 1.6;">
+                <strong>Trade:</strong> TSLA at $200, strong bullish setup<br>
+                <strong>Choice:</strong> Buy $205 call, 21 DTE<br>
+                <strong>Why:</strong> Slightly OTM for leverage, enough time for thesis to play out, not too expensive
+            </p>
+            <p style="margin: 0.5rem 0 0 0; color: var(--success-color); font-size: 0.875rem;">
+                <strong>Result:</strong> TSLA hits $215 in 2 weeks, option doubles in value, close at 100% profit
+            </p>
+        </div>
+
+        <div style="background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem;">
+            <h4 style="margin-top: 0; color: var(--danger-color);">❌ Poor Strike/DTE Selection</h4>
+            <p style="color: var(--text-secondary); line-height: 1.6;">
+                <strong>Trade:</strong> TSLA at $200, same bullish setup<br>
+                <strong>Choice:</strong> Buy $230 call, 3 DTE<br>
+                <strong>Why bad:</strong> Strike too far OTM (15% move needed), not enough time
+            </p>
+            <p style="margin: 0.5rem 0 0 0; color: var(--danger-color); font-size: 0.875rem;">
+                <strong>Result:</strong> TSLA hits $215 (+7.5%), but option expires worthless. Thesis was right, trade still lost 100%
+            </p>
+        </div>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--success-color);">✅ Strike & DTE Selection Rules</h3>
+        <ol style="margin: 0; line-height: 1.8; color: var(--text-secondary); padding-left: 1.25rem;">
+            <li>Give yourself <strong>more time</strong> than you think you need (2-3x your timeframe)</li>
+            <li>Don't chase cheap OTM options - they're cheap for a reason (low probability)</li>
+            <li>ATM or 1 strike OTM is the sweet spot for most trades</li>
+            <li>Exit before the last 7 DTE - time decay accelerates dramatically</li>
+            <li>Check the <strong>delta</strong> - aim for 0.30-0.70 for directional trades</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Knowledge Check -->
+<div class="card" style="margin-bottom: 2rem; border: 2px solid var(--accent);">
+    <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--accent);">💡 Knowledge Check</h3>
+
+    <div style="margin-bottom: 1rem;">
+        <p style="font-weight: bold; margin-bottom: 0.5rem;">SPY is trading at $450. You want to buy a call for a 2-week swing trade. Which is the best choice?</p>
+        <div style="display: grid; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson3.checkAnswer(this, false)">
+                A) $470 call, 3 DTE (far OTM, expires soon)
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson3.checkAnswer(this, true)">
+                B) $455 call, 21 DTE (slightly OTM, 3 weeks out)
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson3.checkAnswer(this, false)">
+                C) $440 call, 90 DTE (ITM, long dated)
+            </button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson3.checkAnswer(this, false)">
+                D) $465 call, 1 DTE (OTM, expires tomorrow)
+            </button>
+        </div>
+        <div id="answer-feedback" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; display: none;"></div>
+    </div>
+</div>
+
+<!-- Lesson Navigation -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <button class="btn btn-secondary" onclick="window.location.href='/module-1-lesson-2'">
+        ← Previous Lesson
+    </button>
+    <button class="btn btn-primary" onclick="Module1Lesson3.completeLesson()">
+        Complete Lesson & Continue →
+    </button>
+</div>
+
+<script>
+const Module1Lesson3 = {
+    answered: false,
+
+    checkAnswer(button, isCorrect) {
+        if (this.answered) return;
+        this.answered = true;
+
+        const feedback = document.getElementById('answer-feedback');
+        feedback.style.display = 'block';
+
+        const buttons = button.parentElement.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (isCorrect) {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-success');
+            feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            feedback.style.border = '1px solid var(--success-color)';
+            feedback.innerHTML = `
+                <strong style="color: var(--success-color);">✓ Perfect!</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    The $455 call with 21 DTE gives you: (1) a reasonable strike only 1% OTM, (2) enough time
+                    for your 2-week thesis plus a buffer, and (3) avoids the extreme decay of the last week. This is textbook strike/DTE selection!
+                </p>
+            `;
+        } else {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-danger');
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.style.border = '1px solid var(--danger-color)';
+            feedback.innerHTML = `
+                <strong style="color: var(--danger-color);">✗ Not quite</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">
+                    The correct answer is <strong>B) $455 call, 21 DTE</strong>. This gives you a reasonable strike
+                    with enough time to be right. Options A and D expire too soon. Option C is too expensive and long-dated for a 2-week trade.
+                </p>
+            `;
+        }
+    },
+
+    completeLesson() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        let progress = saved ? JSON.parse(saved) : {
+            level: 1, totalXP: 0, completedModules: [], completedLessons: [],
+            completedQuizzes: [], achievements: [], currentModule: 'module-1', currentLesson: null
+        };
+
+        const lessonId = 'module-1-lesson-3';
+        if (!progress.completedLessons.includes(lessonId)) {
+            progress.completedLessons.push(lessonId);
+            progress.totalXP += 50;
+            localStorage.setItem('tradefly_learn_progress', JSON.stringify(progress));
+            alert('🎉 Lesson 3 Complete! +50 XP\n\nNext: Lesson 4 - Reading Options Chains');
+        }
+
+        window.location.href = '/module-1-lesson-4';
+    }
+};
+</script>

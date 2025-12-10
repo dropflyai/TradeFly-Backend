@@ -27,8 +27,8 @@ const TradeFlyCharts = {
                 textColor: '#9ca3af',
             },
             grid: {
-                vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-                horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                vertLines: { color: 'rgba(255, 255, 255, 0.02)' },
+                horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
             },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
@@ -40,6 +40,8 @@ const TradeFlyCharts = {
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 timeVisible: true,
                 secondsVisible: false,
+                barSpacing: 12,
+                minBarSpacing: 8,
             },
             handleScroll: false,
             handleScale: false,
@@ -49,8 +51,7 @@ const TradeFlyCharts = {
         const candlestickSeries = chart.addCandlestickSeries({
             upColor: '#10b981',
             downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
+            borderVisible: false,
             wickUpColor: '#10b981',
             wickDownColor: '#ef4444',
         });
@@ -100,8 +101,8 @@ const TradeFlyCharts = {
                 textColor: '#9ca3af',
             },
             grid: {
-                vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-                horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                vertLines: { color: 'rgba(255, 255, 255, 0.02)' },
+                horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
             },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
@@ -113,6 +114,8 @@ const TradeFlyCharts = {
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 timeVisible: true,
                 secondsVisible: false,
+                barSpacing: 12,
+                minBarSpacing: 8,
             },
         });
 
@@ -120,8 +123,7 @@ const TradeFlyCharts = {
         const candlestickSeries = chart.addCandlestickSeries({
             upColor: '#10b981',
             downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
+            borderVisible: false,
             wickUpColor: '#10b981',
             wickDownColor: '#ef4444',
         });
@@ -134,7 +136,7 @@ const TradeFlyCharts = {
             },
             priceScaleId: '',
             scaleMargins: {
-                top: 0.7,
+                top: 0.75,
                 bottom: 0,
             },
         });
@@ -228,7 +230,7 @@ const TradeFlyCharts = {
         const volumeData = apiData.map(bar => ({
             time: bar.timestamp || bar.time,
             value: parseFloat(bar.volume || 0),
-            color: bar.close >= bar.open ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+            color: bar.close >= bar.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
         }));
 
         return { candleData, volumeData };
@@ -266,7 +268,7 @@ const TradeFlyCharts = {
             volumeData.push({
                 time,
                 value: Math.random() * 10000000 + 1000000,
-                color: close >= open ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+                color: close >= open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
             });
 
             price = close;

@@ -1,0 +1,287 @@
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">📖 Module 1: Options Basics</h1>
+            <p class="page-subtitle">Lesson 5: Premium Components (Final Lesson!)</p>
+        </div>
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back to Academy</button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson Progress</span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Lesson 5 of 5 - Final Lesson!</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div style="background: linear-gradient(90deg, var(--success-color), var(--primary)); height: 100%; width: 100%; transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-top: 0;">What Makes Up an Option's Price?</h2>
+
+    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 2rem;">
+        The <strong style="color: var(--text-primary);">premium</strong> you pay for an option is made up of two components:
+        <strong>intrinsic value</strong> and <strong>extrinsic value (time value)</strong>.
+    </p>
+
+    <div style="background: var(--darker-bg); border: 2px solid var(--primary); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-bottom: 1rem;">
+            Option Premium = Intrinsic Value + Extrinsic Value
+        </div>
+        <div style="color: var(--text-muted); font-size: 0.875rem;">
+            (What it's worth NOW) + (What it COULD be worth)
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">💎 Intrinsic Value (Real Value)</h3>
+
+    <div style="background: var(--dark-bg); border-left: 4px solid var(--success-color); padding: 1.5rem; border-radius: 0.25rem; margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem;">
+            <strong style="color: var(--success-color);">Intrinsic value</strong> is the <strong>real, immediate profit</strong> if you exercised the option right now.
+        </p>
+
+        <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+            <strong style="color: var(--text-primary);">For CALLS:</strong>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Intrinsic Value = Stock Price - Strike Price (if positive)</p>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
+                Example: AAPL at $150, $140 call → Intrinsic = $10 ($150 - $140)
+            </p>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem;">
+            <strong style="color: var(--text-primary);">For PUTS:</strong>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Intrinsic Value = Strike Price - Stock Price (if positive)</p>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
+                Example: AAPL at $150, $160 put → Intrinsic = $10 ($160 - $150)
+            </p>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 0.5rem;">
+            <strong style="color: var(--danger-color);">Important:</strong>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                OTM options have ZERO intrinsic value! Their entire premium is extrinsic (time value).
+            </p>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">⏰ Extrinsic Value (Time Value)</h3>
+
+    <div style="background: var(--dark-bg); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0.25rem; margin-bottom: 2rem;">
+        <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem;">
+            <strong style="color: var(--accent);">Extrinsic value</strong> is the <strong>extra premium</strong> paid for the possibility
+            that the option could become more valuable before expiration.
+        </p>
+
+        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+            Extrinsic value is influenced by:
+        </p>
+
+        <div style="display: grid; gap: 1rem;">
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <strong style="color: var(--primary);">1. Time Remaining (DTE)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    More time = more premium. Time value decays to $0 at expiration (theta decay).
+                </p>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <strong style="color: var(--primary);">2. Implied Volatility (IV)</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Higher volatility = higher premium. Stocks expected to move more cost more to insure.
+                </p>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <strong style="color: var(--primary);">3. Proximity to Strike</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    ATM options have the most extrinsic value. Deep ITM/OTM have less time value.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📊 Real Premium Breakdown Example</h3>
+
+    <div style="background: var(--darker-bg); border: 2px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 1rem;">
+            TSLA trading at $200, 30 days until expiration
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <div style="font-weight: bold; color: var(--success-color); margin-bottom: 0.5rem;">$190 Call (ITM)</div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">
+                    Premium: $15.00<br>
+                    Intrinsic: $10.00 ($200 - $190)<br>
+                    Extrinsic: $5.00<br>
+                    <span style="color: var(--text-muted);">Mostly real value</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <div style="font-weight: bold; color: var(--primary); margin-bottom: 0.5rem;">$200 Call (ATM)</div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">
+                    Premium: $8.00<br>
+                    Intrinsic: $0.00<br>
+                    Extrinsic: $8.00<br>
+                    <span style="color: var(--text-muted);">All time value</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 0.5rem;">
+                <div style="font-weight: bold; color: var(--danger-color); margin-bottom: 0.5rem;">$210 Call (OTM)</div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">
+                    Premium: $3.00<br>
+                    Intrinsic: $0.00<br>
+                    Extrinsic: $3.00<br>
+                    <span style="color: var(--text-muted);">All speculation</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(99, 102, 241, 0.05); border-left: 4px solid var(--primary); border-radius: 0.25rem;">
+            <strong>Key Insight:</strong> As expiration approaches, extrinsic value melts away. The $200 ATM call will decay
+            from $8 → $6 → $4 → $2 → $0 even if TSLA doesn't move!
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">⏱️ Time Decay (Theta) Visualization</h3>
+
+    <div style="background: var(--dark-bg); border: 2px solid var(--warning-color); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+            Time decay is <strong>not linear</strong>. It accelerates dramatically in the last 30 days:
+        </p>
+
+        <div style="background: var(--darker-bg); padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.875rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">60 DTE:</span>
+                <span style="color: var(--success-color);">████████████████████ $10.00 premium</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">45 DTE:</span>
+                <span style="color: var(--success-color);">███████████████████ $9.50 (-$0.50)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">30 DTE:</span>
+                <span style="color: var(--primary);">█████████████████ $8.50 (-$1.00)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">14 DTE:</span>
+                <span style="color: var(--warning-color);">████████████ $6.00 (-$2.50)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">7 DTE:</span>
+                <span style="color: var(--danger-color);">███████ $3.50 (-$2.50)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">0 DTE:</span>
+                <span style="color: var(--danger-color);">█ $0.50 (-$3.00)</span>
+            </div>
+        </div>
+
+        <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.875rem;">
+            <strong style="color: var(--danger-color);">Critical Rule:</strong> Sell or close positions before the last 7-14 days unless you have strong conviction.
+        </p>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--success-color);">✅ Premium Selection Strategy</h3>
+        <ul style="margin: 0; line-height: 1.8; color: var(--text-secondary); padding-left: 1.25rem;">
+            <li><strong>For quick trades (0-7 DTE):</strong> Accept high theta, exit fast, scalp small moves</li>
+            <li><strong>For swing trades (14-30 DTE):</strong> Balance premium cost with time to be right</li>
+            <li><strong>For position trades (60+ DTE):</strong> Pay more upfront, but theta is slower</li>
+            <li><strong>Avoid buying high IV:</strong> You're overpaying. Wait for IV to normalize</li>
+            <li><strong>Exit before expiration week:</strong> Don't let theta destroy your gains</li>
+        </ul>
+    </div>
+
+    <div style="background: rgba(99, 102, 241, 0.1); border: 2px solid var(--primary); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; text-align: center;">
+        <h3 style="font-size: 1.5rem; margin-top: 0; color: var(--primary);">🎓 Module 1 Complete!</h3>
+        <p style="color: var(--text-secondary); line-height: 1.6; margin: 1rem 0;">
+            You've learned the foundation of options trading:<br>
+            What options are, calls vs puts, strike/expiration selection, reading chains, and premium components.
+        </p>
+        <p style="color: var(--success-color); font-weight: bold; font-size: 1.125rem; margin: 0;">
+            Ready to test your knowledge? Take the Module 1 Quiz next!
+        </p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem; border: 2px solid var(--accent);">
+    <h3 style="font-size: 1.25rem; margin-top: 0; color: var(--accent);">💡 Knowledge Check</h3>
+    <div style="margin-bottom: 1rem;">
+        <p style="font-weight: bold; margin-bottom: 0.5rem;">An ATM option with 7 DTE has a premium of $5. It has zero intrinsic value. How much is extrinsic value?</p>
+        <div style="display: grid; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson5.checkAnswer(this, false)">A) $0 (no intrinsic means no value)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson5.checkAnswer(this, true)">B) $5 (all premium is extrinsic/time value)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson5.checkAnswer(this, false)">C) $2.50 (half intrinsic, half extrinsic)</button>
+            <button class="btn btn-secondary btn-sm" style="text-align: left;" onclick="Module1Lesson5.checkAnswer(this, false)">D) Cannot determine from this info</button>
+        </div>
+        <div id="answer-feedback" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; display: none;"></div>
+    </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <button class="btn btn-secondary" onclick="window.location.href='/module-1-lesson-4'">← Previous Lesson</button>
+    <button class="btn btn-primary" style="font-size: 1.125rem; padding: 0.75rem 1.5rem;" onclick="Module1Lesson5.completeLesson()">
+        🎉 Complete Module 1 & Take Quiz! →
+    </button>
+</div>
+
+<script>
+const Module1Lesson5 = {
+    answered: false,
+    checkAnswer(button, isCorrect) {
+        if (this.answered) return;
+        this.answered = true;
+        const feedback = document.getElementById('answer-feedback');
+        feedback.style.display = 'block';
+        const buttons = button.parentElement.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (isCorrect) {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-success');
+            feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            feedback.style.border = '1px solid var(--success-color)';
+            feedback.innerHTML = '<strong style="color: var(--success-color);">✓ Excellent!</strong><p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">Premium = Intrinsic + Extrinsic. Since intrinsic is $0 (ATM option), the entire $5 premium is extrinsic (time value). This $5 will decay to $0 by expiration in 7 days!</p>';
+        } else {
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-danger');
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.style.border = '1px solid var(--danger-color)';
+            feedback.innerHTML = '<strong style="color: var(--danger-color);">✗ Not quite</strong><p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">The correct answer is <strong>B) $5</strong>. When intrinsic value is $0, ALL premium is extrinsic (time value). Premium = Intrinsic + Extrinsic, so $5 = $0 + $5.</p>';
+        }
+    },
+    completeLesson() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+        let progress = saved ? JSON.parse(saved) : {level: 1, totalXP: 0, completedModules: [], completedLessons: [], completedQuizzes: [], achievements: [], currentModule: 'module-1', currentLesson: null};
+
+        const lessonId = 'module-1-lesson-5';
+        if (!progress.completedLessons.includes(lessonId)) {
+            progress.completedLessons.push(lessonId);
+            progress.totalXP += 50;
+
+            // Check if all Module 1 lessons are complete
+            const module1Lessons = ['module-1-lesson-1', 'module-1-lesson-2', 'module-1-lesson-3', 'module-1-lesson-4', 'module-1-lesson-5'];
+            const allComplete = module1Lessons.every(l => progress.completedLessons.includes(l));
+
+            if (allComplete && !progress.achievements.some(a => a.name === 'Module Master')) {
+                progress.achievements.push({
+                    icon: '🎓',
+                    name: 'Module Master',
+                    description: 'Completed all Module 1 lessons',
+                    earnedAt: new Date().toISOString()
+                });
+            }
+
+            localStorage.setItem('tradefly_learn_progress', JSON.stringify(progress));
+            alert('🎉 Module 1 Lessons Complete! +50 XP\n\nYou earned: Module Master achievement!\n\nNext: Take the Module 1 Quiz to unlock advanced features!');
+        }
+
+        window.location.href = '/module-1-quiz';
+    }
+};
+</script>

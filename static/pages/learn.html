@@ -1,0 +1,352 @@
+<div class="page-header">
+    <h1 class="page-title">🎓 TradeFly Trading Academy</h1>
+    <p class="page-subtitle">Master options trading through guided lessons, quizzes, and real examples</p>
+</div>
+
+<!-- Progress Overview Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Your Level</div>
+        <div class="stat-value" id="learn-level">1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total XP</div>
+        <div class="stat-value" id="learn-xp">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Completion</div>
+        <div class="stat-value stat-up" id="learn-completion">0%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Badges Earned</div>
+        <div class="stat-value" id="learn-badges">0</div>
+    </div>
+</div>
+
+<!-- XP Progress Bar -->
+<div class="card mb-3">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary); font-size: 0.875rem;">Progress to Level <span id="next-level">2</span></span>
+        <span style="color: var(--text-secondary); font-size: 0.875rem;"><span id="current-xp">0</span> / <span id="xp-needed">500</span> XP</span>
+    </div>
+    <div style="background: var(--dark-bg); border-radius: 9999px; height: 1.5rem; overflow: hidden; border: 1px solid var(--border-color);">
+        <div id="xp-progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: bold;">
+        </div>
+    </div>
+</div>
+
+<!-- Achievement Showcase -->
+<div class="card mb-3" id="achievements-section">
+    <h3 style="margin-top: 0; font-size: 1.25rem;">🏆 Recent Achievements</h3>
+    <div id="achievements-container" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div class="empty-state-icon" style="width: 100%; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+            Complete lessons to earn achievements
+        </div>
+    </div>
+</div>
+
+<!-- Modules Grid -->
+<div style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">📚 Learning Path</h2>
+    <div id="modules-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        <!-- Modules will be dynamically generated -->
+    </div>
+</div>
+
+<script>
+const LearnPage = {
+    progress: null,
+
+    // Module structure definition
+    modules: [
+        {
+            id: 'module-1',
+            number: 1,
+            title: 'Options Basics',
+            icon: '📖',
+            description: 'Understanding options contracts, calls vs puts, and how options work',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Confidence threshold slider in settings',
+            xpReward: 500
+        },
+        {
+            id: 'module-2',
+            number: 2,
+            title: 'The Greeks',
+            icon: '🔢',
+            description: 'Master Delta, Gamma, Theta, Vega, and how Greeks affect options pricing',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Greek values display in signal cards',
+            xpReward: 500
+        },
+        {
+            id: 'module-3',
+            number: 3,
+            title: 'Basic Strategies',
+            icon: '🎯',
+            description: 'Long calls/puts, covered calls, protective puts, and basic directional plays',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Strategy filter dropdown',
+            xpReward: 500
+        },
+        {
+            id: 'module-4',
+            number: 4,
+            title: 'Spreads',
+            icon: '📐',
+            description: 'Vertical spreads, credit/debit spreads, iron condors, and butterflies',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Advanced spread strategy signals',
+            xpReward: 500
+        },
+        {
+            id: 'module-5',
+            number: 5,
+            title: 'TradeFly Strategies',
+            icon: '⚡',
+            description: 'Platform-specific scalping, swing trading, and AI-powered signal interpretation',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Advanced notification settings',
+            xpReward: 500
+        },
+        {
+            id: 'module-6',
+            number: 6,
+            title: 'Live Trading',
+            icon: '🚀',
+            description: 'Order types, position sizing, risk management, and going live confidently',
+            lessons: 5,
+            quizQuestions: 12,
+            unlocks: 'Certified Trader badge + certificate',
+            xpReward: 1000
+        }
+    ],
+
+    async init() {
+        console.log('Initializing TradeFly Trading Academy');
+
+        // Load progress from localStorage
+        this.loadProgress();
+
+        // Render UI
+        this.updateStats();
+        this.renderModules();
+        this.renderAchievements();
+    },
+
+    loadProgress() {
+        const saved = localStorage.getItem('tradefly_learn_progress');
+
+        if (saved) {
+            this.progress = JSON.parse(saved);
+        } else {
+            // Initialize new progress
+            this.progress = {
+                level: 1,
+                totalXP: 0,
+                completedModules: [],
+                completedLessons: [],
+                completedQuizzes: [],
+                achievements: [],
+                currentModule: 'module-1',
+                currentLesson: null
+            };
+            this.saveProgress();
+        }
+    },
+
+    saveProgress() {
+        localStorage.setItem('tradefly_learn_progress', JSON.stringify(this.progress));
+    },
+
+    updateStats() {
+        // Calculate level from XP (500 XP per level)
+        const level = Math.floor(this.progress.totalXP / 500) + 1;
+        this.progress.level = level;
+
+        // Calculate XP progress within current level
+        const currentLevelXP = this.progress.totalXP % 500;
+        const xpNeeded = 500;
+        const xpPercent = (currentLevelXP / xpNeeded) * 100;
+
+        // Calculate completion percentage
+        const totalLessons = this.modules.reduce((sum, m) => sum + m.lessons, 0);
+        const completedLessons = this.progress.completedLessons.length;
+        const completionPercent = totalLessons > 0 ? (completedLessons / totalLessons * 100).toFixed(0) : 0;
+
+        // Update DOM
+        document.getElementById('learn-level').textContent = level;
+        document.getElementById('learn-xp').textContent = this.progress.totalXP.toLocaleString();
+        document.getElementById('learn-completion').textContent = `${completionPercent}%`;
+        document.getElementById('learn-badges').textContent = this.progress.achievements.length;
+
+        document.getElementById('next-level').textContent = level + 1;
+        document.getElementById('current-xp').textContent = currentLevelXP;
+        document.getElementById('xp-needed').textContent = xpNeeded;
+
+        const progressBar = document.getElementById('xp-progress-bar');
+        progressBar.style.width = `${xpPercent}%`;
+        if (xpPercent > 15) {
+            progressBar.textContent = `${xpPercent.toFixed(0)}%`;
+        }
+    },
+
+    renderModules() {
+        const container = document.getElementById('modules-container');
+
+        container.innerHTML = this.modules.map((module, index) => {
+            const isUnlocked = this.isModuleUnlocked(module.id);
+            const isCompleted = this.progress.completedModules.includes(module.id);
+            const isCurrent = this.progress.currentModule === module.id;
+
+            // Count completed lessons for this module
+            const completedLessonsCount = this.progress.completedLessons.filter(
+                l => l.startsWith(module.id)
+            ).length;
+            const progressPercent = module.lessons > 0 ? (completedLessonsCount / module.lessons * 100) : 0;
+
+            return this.renderModuleCard(module, isUnlocked, isCompleted, isCurrent, progressPercent);
+        }).join('');
+    },
+
+    renderModuleCard(module, isUnlocked, isCompleted, isCurrent, progressPercent) {
+        const statusBadge = isCompleted
+            ? '<span class="badge badge-success">✓ Completed</span>'
+            : isCurrent && isUnlocked
+            ? '<span class="badge badge-info">In Progress</span>'
+            : !isUnlocked
+            ? '<span class="badge badge-secondary">🔒 Locked</span>'
+            : '<span class="badge badge-primary">Available</span>';
+
+        const cardClass = !isUnlocked ? 'opacity: 0.6; cursor: not-allowed;' : 'cursor: pointer;';
+        const borderColor = isCompleted
+            ? 'var(--success-color)'
+            : isCurrent
+            ? 'var(--primary)'
+            : 'var(--border-color)';
+
+        return `
+            <div class="card"
+                 style="${cardClass} border-color: ${borderColor}; border-width: 2px;"
+                 ${isUnlocked ? `onclick="LearnPage.openModule('${module.id}')"` : ''}>
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">${module.icon}</div>
+                        <h3 style="margin: 0; font-size: 1.25rem;">Module ${module.number}: ${module.title}</h3>
+                    </div>
+                    ${statusBadge}
+                </div>
+
+                <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 1rem;">
+                    ${module.description}
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
+                    <div>
+                        <span class="text-muted">📝 Lessons:</span> <strong>${module.lessons}</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">❓ Quiz:</span> <strong>${module.quizQuestions} questions</strong>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <span class="text-muted">🎁 Unlocks:</span> <strong>${module.unlocks}</strong>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <span class="text-muted">⭐ Reward:</span> <strong>${module.xpReward} XP</strong>
+                    </div>
+                </div>
+
+                ${isUnlocked ? `
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem;">
+                            <span class="text-muted">Progress</span>
+                            <span class="text-muted">${Math.round(progressPercent)}%</span>
+                        </div>
+                        <div style="background: var(--dark-bg); border-radius: 9999px; height: 0.5rem; overflow: hidden;">
+                            <div style="background: ${isCompleted ? 'var(--success-color)' : 'var(--primary)'}; height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${isUnlocked ? `
+                    <button class="btn ${isCompleted ? 'btn-success' : 'btn-primary'} btn-sm" style="width: 100%; margin-top: 0.5rem;">
+                        ${isCompleted ? '✓ Review Module' : isCurrent ? 'Continue Learning →' : 'Start Module →'}
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    },
+
+    isModuleUnlocked(moduleId) {
+        // Module 1 is always unlocked
+        if (moduleId === 'module-1') return true;
+
+        // Other modules unlock when previous module is completed
+        const moduleNumber = parseInt(moduleId.split('-')[1]);
+        const previousModuleId = `module-${moduleNumber - 1}`;
+
+        return this.progress.completedModules.includes(previousModuleId);
+    },
+
+    openModule(moduleId) {
+        const module = this.modules.find(m => m.id === moduleId);
+
+        if (!module) return;
+
+        // Update current module
+        this.progress.currentModule = moduleId;
+        this.saveProgress();
+
+        // Navigate to first lesson of this module
+        if (moduleId === 'module-1') {
+            // Check if they've completed any lessons
+            const completedLessonsInModule = this.progress.completedLessons.filter(
+                l => l.startsWith('module-1')
+            ).length;
+
+            // Go to next incomplete lesson or first lesson
+            const lessonNumber = completedLessonsInModule + 1;
+
+            if (lessonNumber === 1) {
+                window.location.href = '/module-1-lesson-1';
+            } else if (lessonNumber === 2) {
+                window.location.href = '/module-1-lesson-2';
+            } else if (lessonNumber === 3) {
+                window.location.href = '/module-1-lesson-3';
+            } else if (lessonNumber === 4) {
+                window.location.href = '/module-1-lesson-4';
+            } else if (lessonNumber === 5) {
+                window.location.href = '/module-1-lesson-5';
+            } else {
+                // All lessons complete, go to quiz
+                window.location.href = '/module-1-quiz';
+            }
+        } else {
+            // Other modules not yet implemented
+            alert(`${module.title} lessons coming soon!\n\nComplete Module 1 first.`);
+        }
+    },
+
+    renderAchievements() {
+        const container = document.getElementById('achievements-container');
+
+        if (!this.progress.achievements || this.progress.achievements.length === 0) {
+            return; // Keep empty state
+        }
+
+        // Render badges (will implement badge system with Module 1)
+        container.innerHTML = this.progress.achievements.map(achievement => `
+            <div class="badge badge-success" style="font-size: 1rem; padding: 0.75rem 1rem;">
+                ${achievement.icon} ${achievement.name}
+            </div>
+        `).join('');
+    }
+};
+
+LearnPage.init();
+</script>

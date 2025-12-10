@@ -1,13 +1,13 @@
 [
   {
-    "signal_id": "SCALPING_RIVN_20251209_153408",
-    "symbol": "RIVN",
+    "signal_id": "SCALPING_NIO_20251210_082302",
+    "symbol": "NIO",
     "strategy": "SCALPING",
     "action": "BUY_CALL",
-    "entry_price": 13.1,
-    "entry_time": "2025-12-09T15:34:08.165998",
-    "target_price": 15.064999999999998,
-    "stop_loss": 12.444999999999999,
-    "strike": 5.0,
+    "entry_price": 4.05,
+    "entry_time": "2025-12-10T08:23:02.292032",
+    "target_price": 4.859999999999999,
+    "stop_loss": 3.8474999999999997,
+    "strike": 1.5,
     "option_type": "call",
     "expiration": 
