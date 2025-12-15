@@ -6,12 +6,23 @@ API Documentation: https://massive.com/docs/options
 Requires: Options Advanced subscription ($99/mo)
 
 FALLBACK: Uses yfinance when Massive/Polygon returns no data
+
+RELIABILITY FEATURES:
+- Redis caching (30s TTL)
+- Retry logic with exponential backoff
+- Circuit breakers for API protection
 """
 import logging
 from datetime import datetime, date, timedelta
 from typing import Optional, List
 import requests
 import yfinance as yf
+import redis
+import json
+import os
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
 from options_models import (
     OptionContract,
     OptionType,
@@ -23,6 +34,39 @@ from options_models import (
 from greeks_calculator import GreeksCalculator, ImpliedVolatilityMetrics
 
 logger = logging.getLogger(__name__)
+
+# Initialize Redis client
+try:
+    redis_host = os.getenv('REDIS_HOST', 'localhost')
+    redis_port = int(os.getenv('REDIS_PORT', 6379))
+    redis_client = redis.Redis(
+        host=redis_host,
+        port=redis_port,
+        decode_responses=True,
+        socket_connect_timeout=3,
+        socket_timeout=3
+    )
+    # Test connection
+    redis_client.ping()
+    logger.info(f"✅ Redis connected: {redis_host}:{redis_port}")
+except Exception as e:
+    logger.warning(f"⚠️  Redis unavailable: {e}. Caching disabled.")
+    redis_client = None
+
+# Initialize circuit breakers
+massive_api_breaker = CircuitBreaker(
+    fail_max=5,              # Open after 5 failures
+    timeout_duration=60,      # Stay open for 60s
+    reset_timeout=120,        # Try to close after 120s
+    name="MassiveAPI"
+)
+
+yfinance_breaker = CircuitBreaker(
+    fail_max=3,
+    timeout_duration=30,
+    reset_timeout=60,
+    name="YFinance"
+)
 
 
 class MassiveOptionsAPI:
@@ -38,7 +82,45 @@ class MassiveOptionsAPI:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = "https://api.massive.com"
-        logger.info("Massive Options API initialized")
+        self.redis = redis_client
+        logger.info("Massive Options API initialized with reliability features")
+
+    def _get_cache(self, key: str) -> Optional[dict]:
+        """Get data from Redis cache"""
+        if not self.redis:
+            return None
+
+        try:
+            cached = self.redis.get(key)
+            if cached:
+                logger.debug(f"✅ Cache HIT: {key}")
+                return json.loads(cached)
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
+
+        return None
+
+    def _set_cache(self, key: str, data: dict, ttl: int = 30):
+        """Set data in Redis cache with TTL"""
+        if not self.redis:
+            return
+
+        try:
+            self.redis.setex(key, ttl, json.dumps(data))
+            logger.debug(f"💾 Cache SET: {key} (TTL={ttl}s)")
+        except Exception as e:
+            logger.warning(f"Cache write error: {e}")
+
+    def _update_last_data_time(self):
+        """Update timestamp of last successful data fetch"""
+        if not self.redis:
+            return
+
+        try:
+            import time
+            self.redis.set("last_data_update", str(time.time()))
+        except Exception as e:
+            logger.warning(f"Failed to update last_data_time: {e}")
 
     def get_options_chain(
         self,
@@ -157,6 +239,8 @@ class MassiveOptionsAPI:
         Get liquid options suitable for trading
         100% Massive API - NO Yahoo Finance fallback
 
+        RELIABILITY: Redis caching with 30s TTL
+
         Args:
             symbol: Stock symbol
             min_volume: Minimum daily volume
@@ -165,6 +249,19 @@ class MassiveOptionsAPI:
         Returns:
             List of liquid OptionContract objects
         """
+        # Check cache first
+        cache_key = f"liquid_options:{symbol}:{min_volume}:{max_spread_percent}"
+        cached = self._get_cache(cache_key)
+
+        if cached:
+            # Reconstruct OptionContract objects from cached data
+            try:
+                contracts = [self._dict_to_contract(c) for c in cached]
+                logger.info(f"✅ Returning {len(contracts)} cached liquid contracts for {symbol}")
+                return contracts
+            except Exception as e:
+                logger.warning(f"Failed to deserialize cache: {e}")
+
         # Get contracts from Massive API ONLY
         all_contracts = self.get_option_snapshot(symbol)
 
@@ -187,6 +284,16 @@ class MassiveOptionsAPI:
             liquid_contracts.append(contract)
 
         logger.info(f"Found {len(liquid_contracts)} liquid contracts for {symbol} (min_volume={min_volume}, max_spread={max_spread_percent}%)")
+
+        # Cache the results (serialize to dict)
+        if liquid_contracts:
+            try:
+                cache_data = [self._contract_to_dict(c) for c in liquid_contracts]
+                self._set_cache(cache_key, cache_data, ttl=30)
+                self._update_last_data_time()
+            except Exception as e:
+                logger.warning(f"Failed to cache results: {e}")
+
         return liquid_contracts
 
     def get_high_iv_options(
@@ -213,10 +320,18 @@ class MassiveOptionsAPI:
 
         return high_iv_contracts
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type(requests.exceptions.RequestException),
+        reraise=True
+    )
     def _get_stock_price(self, symbol: str) -> Optional[float]:
         """
         Get current stock price from options snapshot
         (Options Advanced may not have access to stock trade endpoint)
+
+        RELIABILITY: Retry with exponential backoff + circuit breaker
 
         Args:
             symbol: Stock symbol
@@ -225,13 +340,23 @@ class MassiveOptionsAPI:
             Current price or None
         """
         try:
-            # Use options snapshot to get underlying price
-            url = f"{self.base_url}/v3/snapshot/options/{symbol}"
-            params = {"apiKey": self.api_key, "limit": 1}
+            # Check cache first
+            cache_key = f"stock_price:{symbol}"
+            cached = self._get_cache(cache_key)
+            if cached and isinstance(cached, dict):
+                return cached.get('price')
 
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            # Circuit breaker protection
+            @massive_api_breaker
+            def fetch_price():
+                url = f"{self.base_url}/v3/snapshot/options/{symbol}"
+                params = {"apiKey": self.api_key, "limit": 1}
+
+                response = requests.get(url, params=params, timeout=10)
+                response.raise_for_status()
+                return response.json()
+
+            data = fetch_price()
 
             if data.get("status") == "OK" and data.get("results"):
                 # Extract underlying asset price from first contract
@@ -240,11 +365,17 @@ class MassiveOptionsAPI:
                 price = underlying.get("price")
 
                 if price:
-                    return float(price)
+                    price_float = float(price)
+                    # Cache for 10 seconds (stock price changes frequently)
+                    self._set_cache(cache_key, {'price': price_float}, ttl=10)
+                    return price_float
 
             logger.warning(f"No underlying price found for {symbol} in options snapshot")
             return None
 
+        except CircuitBreakerError:
+            logger.error(f"Circuit breaker OPEN for Massive API - too many failures")
+            return None
         except Exception as e:
             logger.error(f"Error fetching stock price for {symbol}: {e}")
             return None
@@ -628,3 +759,54 @@ class MassiveOptionsAPI:
         except Exception as e:
             logger.error(f"Error parsing yfinance contract: {e}")
             return None
+
+    def _contract_to_dict(self, contract: OptionContract) -> dict:
+        """Serialize OptionContract to dict for caching"""
+        return {
+            'symbol': contract.symbol,
+            'strike': contract.strike,
+            'expiration': contract.expiration.isoformat(),
+            'option_type': contract.option_type.value,
+            'pricing': {
+                'bid': contract.pricing.bid,
+                'ask': contract.pricing.ask,
+                'last': contract.pricing.last,
+                'mark': contract.pricing.mark
+            },
+            'volume_metrics': {
+                'volume': contract.volume_metrics.volume,
+                'open_interest': contract.volume_metrics.open_interest,
+                'volume_avg_30d': contract.volume_metrics.volume_avg_30d,
+                'volume_ratio': contract.volume_metrics.volume_ratio
+            },
+            'greeks': {
+                'delta': contract.greeks.delta,
+                'gamma': contract.greeks.gamma,
+                'theta': contract.greeks.theta,
+                'vega': contract.greeks.vega,
+                'rho': contract.greeks.rho
+            },
+            'iv_metrics': {
+                'iv': contract.iv_metrics.iv,
+                'iv_rank': contract.iv_metrics.iv_rank,
+                'iv_percentile': contract.iv_metrics.iv_percentile,
+                'historical_volatility': contract.iv_metrics.historical_volatility
+            },
+            'underlying_price': contract.underlying_price,
+            'contract_id': contract.contract_id
+        }
+
+    def _dict_to_contract(self, data: dict) -> OptionContract:
+        """Deserialize dict to OptionContract"""
+        return OptionContract(
+            symbol=data['symbol'],
+            strike=data['strike'],
+            expiration=date.fromisoformat(data['expiration']),
+            option_type=OptionType(data['option_type']),
+            pricing=OptionPricing(**data['pricing']),
+            volume_metrics=VolumeMetrics(**data['volume_metrics']),
+            greeks=Greeks(**data['greeks']),
+            iv_metrics=ImpliedVolatility(**data['iv_metrics']),
+            underlying_price=data['underlying_price'],
+            contract_id=data['contract_id']
+        )

@@ -9,6 +9,9 @@ This is the CORE ENGINE that:
 4. Applies risk management
 5. Generates actionable trading signals
 6. Detects candlestick patterns for entry/exit signals
+
+RELIABILITY FEATURES:
+- Data staleness detection (refuse to trade on old data)
 """
 import logging
 from typing import List, Optional
@@ -17,6 +20,8 @@ import numpy as np
 import pandas as pd
 import requests
 import os
+import redis
+import time
 
 from options_models import (
     OptionContract,
@@ -39,6 +44,29 @@ from technical_analysis import TechnicalAnalysis
 from candlestick_patterns import CandlestickPatternDetector, PatternType, Signal
 
 logger = logging.getLogger(__name__)
+
+
+class DataStaleError(Exception):
+    """Raised when market data is too old to trade on"""
+    pass
+
+
+# Initialize Redis client for staleness check
+try:
+    redis_host = os.getenv('REDIS_HOST', 'localhost')
+    redis_port = int(os.getenv('REDIS_PORT', 6379))
+    redis_client = redis.Redis(
+        host=redis_host,
+        port=redis_port,
+        decode_responses=True,
+        socket_connect_timeout=3,
+        socket_timeout=3
+    )
+    redis_client.ping()
+    logger.info(f"✅ Redis connected for staleness detection: {redis_host}:{redis_port}")
+except Exception as e:
+    logger.warning(f"⚠️  Redis unavailable: {e}. Staleness detection disabled.")
+    redis_client = None
 
 
 class OptionsSignalDetector:
@@ -65,6 +93,39 @@ class OptionsSignalDetector:
 
         logger.info("Options Signal Detector initialized with candlestick pattern recognition")
 
+    def _check_data_freshness(self) -> None:
+        """
+        Check if market data is fresh enough to trade on
+
+        Raises:
+            DataStaleError: If data is older than 45 seconds
+        """
+        if not redis_client:
+            # If Redis unavailable, skip staleness check
+            return
+
+        try:
+            last_update = redis_client.get("last_data_update")
+
+            if not last_update:
+                logger.warning("⚠️  No data update timestamp found - first run?")
+                return
+
+            age = time.time() - float(last_update)
+
+            if age > 45:  # 45 second threshold
+                raise DataStaleError(
+                    f"Market data is {age:.1f}s old (threshold: 45s). "
+                    f"Refusing to generate signals on stale data."
+                )
+
+            logger.debug(f"✅ Data freshness OK: {age:.1f}s old")
+
+        except DataStaleError:
+            raise
+        except Exception as e:
+            logger.warning(f"Could not check data freshness: {e}")
+
     def scan_for_signals(
         self,
         watchlist: List[str],
@@ -73,13 +134,26 @@ class OptionsSignalDetector:
         """
         Scan watchlist for trading opportunities
 
+        RELIABILITY: Checks data freshness before scanning
+
         Args:
             watchlist: List of symbols to scan (e.g., ["NVDA", "TSLA", "AAPL"])
             strategies: Strategies to run (defaults to all)
 
         Returns:
             List of OptionsSignal objects
+
+        Raises:
+            DataStaleError: If market data is too old
         """
+        # Check data freshness FIRST
+        try:
+            self._check_data_freshness()
+        except DataStaleError as e:
+            logger.error(f"❌ {e}")
+            # Return empty signals rather than crash - frontend will show error
+            return []
+
         if strategies is None:
             strategies = [
                 StrategyType.SCALPING,

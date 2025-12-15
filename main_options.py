@@ -13,6 +13,8 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
+import redis
+import time
 from dotenv import load_dotenv
 
 from options_models import OptionsSignal, StrategyType
@@ -28,6 +30,25 @@ from market_status import init_market_status, get_market_status
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Redis client for health checks
+try:
+    redis_host = os.getenv('REDIS_HOST', 'localhost')
+    redis_port = int(os.getenv('REDIS_PORT', 6379))
+    redis_health_client = redis.Redis(
+        host=redis_host,
+        port=redis_port,
+        decode_responses=True,
+        socket_connect_timeout=3,
+        socket_timeout=3
+    )
+    redis_health_client.ping()
+    logger_redis = logging.getLogger(__name__)
+    logger_redis.info(f"✅ Redis health client connected: {redis_host}:{redis_port}")
+except Exception as e:
+    logger_redis = logging.getLogger(__name__)
+    logger_redis.warning(f"⚠️  Redis unavailable for health checks: {e}")
+    redis_health_client = None
 
 # Configure logging
 logging.basicConfig(
@@ -157,16 +178,39 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
-    """API health check endpoint"""
+    """
+    API health check endpoint
+
+    Returns system health including data freshness
+    """
+    # Check data age
+    data_age = None
+    data_fresh = None
+
+    if redis_health_client:
+        try:
+            last_update = redis_health_client.get("last_data_update")
+            if last_update:
+                data_age = time.time() - float(last_update)
+                data_fresh = data_age < 45  # Fresh if < 45s old
+        except Exception as e:
+            logger.warning(f"Could not check data age: {e}")
+
     return {
         "name": "TradeFly Options API",
-        "status": "operational",
+        "status": "operational" if data_fresh is not False else "degraded",
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
         "engines": {
             "options_api": options_api is not None,
             "signal_detector": signal_detector is not None,
-            "market_status": get_market_status() is not None
+            "market_status": get_market_status() is not None,
+            "redis": redis_health_client is not None
+        },
+        "data_freshness": {
+            "last_update_age_seconds": round(data_age, 1) if data_age is not None else None,
+            "is_fresh": data_fresh,
+            "threshold_seconds": 45
         }
     }
 

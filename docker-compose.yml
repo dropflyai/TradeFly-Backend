@@ -1,6 +1,28 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: tradefly-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - tradefly-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   tradefly-backend:
     build: .
     container_name: tradefly-backend
@@ -17,11 +39,16 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SIGNAL_CHECK_INTERVAL=${SIGNAL_CHECK_INTERVAL:-60}
       - TICKERS_TO_WATCH=${TICKERS_TO_WATCH:-NVDA,TSLA,AAPL,AMD,MSFT,GOOGL,AMZN,META}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       # Mount .env file for easier updates
       - ./.env:/app/.env:ro
     networks:
       - tradefly-network
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
       interval: 30s
@@ -37,3 +64,7 @@ services:
 networks:
   tradefly-network:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
