@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from options_models import OptionsSignal, StrategyType
 from options_signal_detector import OptionsSignalDetector
 from massive_options_api import MassiveOptionsAPI
-from market_data_polygon import PolygonMarketDataService
 from paper_trading import PaperTradingEngine, TradeOutcome
 from backtest_engine import BacktestEngine
 from position_tracker import PositionTracker, ExitSignal, ExitReason
@@ -38,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 # Global instances
 options_api: Optional[MassiveOptionsAPI] = None
-market_data_api: Optional[PolygonMarketDataService] = None
 signal_detector: Optional[OptionsSignalDetector] = None
 paper_trading: Optional[PaperTradingEngine] = None
 position_tracker: Optional[PositionTracker] = None
@@ -90,7 +88,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 TradeFly Options - Starting up...")
 
-    global options_api, market_data_api, signal_detector, paper_trading, position_tracker, top_movers_scanner
+    global options_api, signal_detector, paper_trading, position_tracker, top_movers_scanner
 
     # Initialize paper trading engine
     paper_trading = PaperTradingEngine()
@@ -108,16 +106,14 @@ async def lifespan(app: FastAPI):
     massive_api_key = os.getenv("MASSIVE_API_KEY")
     if massive_api_key:
         options_api = MassiveOptionsAPI(massive_api_key)
-        market_data_api = PolygonMarketDataService(massive_api_key)
 
         # Initialize signal detector
         signal_detector = OptionsSignalDetector(
             options_api=options_api,
-            market_data_api=market_data_api,
             account_balance=float(os.getenv("ACCOUNT_BALANCE", "10000"))
         )
 
-        logger.info("✅ Options trading engine initialized")
+        logger.info("✅ Options trading engine initialized with candlestick pattern recognition")
     else:
         logger.error("❌ MASSIVE_API_KEY not found - options trading disabled")
 

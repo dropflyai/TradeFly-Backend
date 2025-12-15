@@ -35,7 +35,6 @@ from options_strategies import (
 from swing_trading_strategy import SwingTradingStrategy, SwingSignal
 from massive_options_api import MassiveOptionsAPI
 from technical_analysis import TechnicalAnalysis
-from market_data_polygon import PolygonMarketDataService
 from candlestick_patterns import CandlestickPatternDetector, PatternType, Signal
 
 logger = logging.getLogger(__name__)
@@ -55,11 +54,9 @@ class OptionsSignalDetector:
     def __init__(
         self,
         options_api: MassiveOptionsAPI,
-        market_data_api: PolygonMarketDataService,
         account_balance: float = 10000.0
     ):
         self.options_api = options_api
-        self.market_data_api = market_data_api
         self.account_balance = account_balance
         self.risk_manager = RiskManager()
         self.ta = TechnicalAnalysis()
