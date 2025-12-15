@@ -12,10 +12,11 @@ This is the CORE ENGINE that:
 """
 import logging
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
-import yfinance as yf
+import requests
+import os
 
 from options_models import (
     OptionContract,
@@ -427,7 +428,7 @@ class OptionsSignalDetector:
 
     def _get_price_history(self, symbol: str) -> Optional[dict]:
         """
-        Get REAL price history for underlying stock using yfinance
+        Get REAL price history for underlying stock using Massive API (Stock Advanced)
 
         Args:
             symbol: Stock symbol
@@ -436,33 +437,46 @@ class OptionsSignalDetector:
             Dictionary with price arrays and DataFrames for different timeframes
         """
         try:
-            # Fetch real intraday data from yfinance (FREE)
-            ticker = yf.Ticker(symbol)
+            api_key = os.getenv('MASSIVE_API_KEY')
+            if not api_key:
+                logger.error("MASSIVE_API_KEY not found")
+                return None
 
-            # Get 1-minute bars for last 60 minutes (for scalping)
-            df_1m = ticker.history(period='1d', interval='1m')
+            base_url = "https://api.massive.com"
 
-            # Get 15-minute bars for momentum
-            df_15m = ticker.history(period='5d', interval='15m')
+            # Get different timeframes using Massive API aggregates
+            # Stock Advanced plan includes real-time intraday bars
 
-            # Get 1-hour bars for swing trading
-            df_1h = ticker.history(period='1mo', interval='1h')
+            # 1-minute bars (last 100 bars for scalping)
+            df_1m = self._fetch_massive_bars(base_url, api_key, symbol, '1', 'minute', 100)
 
-            # Get daily bars for swing trading and candlestick patterns
-            df_daily = ticker.history(period='3mo', interval='1d')
+            # 15-minute bars (last 50 bars for momentum)
+            df_15m = self._fetch_massive_bars(base_url, api_key, symbol, '15', 'minute', 50)
 
-            if df_1m.empty:
-                logger.warning(f"No price history available for {symbol}")
+            # 1-hour bars (last 50 bars for swing)
+            df_1h = self._fetch_massive_bars(base_url, api_key, symbol, '1', 'hour', 50)
+
+            # Daily bars (last 90 days for swing + candlestick patterns)
+            df_daily = self._fetch_massive_bars(base_url, api_key, symbol, '1', 'day', 90)
+
+            # Check if we have at least SOME data
+            if df_1m is None or df_1m.empty:
+                logger.warning(f"No price history available for {symbol} from Massive API")
                 return None
 
             # Extract close prices as numpy arrays
-            prices_1m = df_1m['Close'].values[-100:] if len(df_1m) > 0 else np.array([])
-            prices_15m = df_15m['Close'].values[-50:] if len(df_15m) > 0 else np.array([])
-            volumes_15m = df_15m['Volume'].values[-50:] if len(df_15m) > 0 else np.array([])
-            prices_1h = df_1h['Close'].values[-50:] if len(df_1h) > 0 else np.array([])
-            prices_daily = df_daily['Close'].values[-30:] if len(df_daily) > 0 else np.array([])
+            prices_1m = df_1m['close'].values[-100:] if len(df_1m) > 0 else np.array([])
+            prices_15m = df_15m['close'].values[-50:] if len(df_15m) > 0 and df_15m is not None else np.array([])
+            volumes_15m = df_15m['volume'].values[-50:] if len(df_15m) > 0 and df_15m is not None else np.array([])
+            prices_1h = df_1h['close'].values[-50:] if len(df_1h) > 0 and df_1h is not None else np.array([])
+            prices_daily = df_daily['close'].values[-30:] if len(df_daily) > 0 and df_daily is not None else np.array([])
 
-            logger.info(f"Fetched REAL price data for {symbol}: {len(prices_1m)} 1m bars, {len(prices_15m)} 15m bars, {len(prices_1h)} 1h bars, {len(prices_daily)} daily bars")
+            logger.info(f"✅ Fetched Massive API data for {symbol}: {len(prices_1m)} 1m bars, {len(prices_15m)} 15m bars, {len(prices_1h)} 1h bars, {len(prices_daily)} daily bars")
+
+            # Rename columns to match yfinance format for candlestick patterns
+            for df in [df_1m, df_15m, df_1h, df_daily]:
+                if df is not None and not df.empty:
+                    df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
 
             return {
                 "1m": prices_1m,
@@ -471,14 +485,78 @@ class OptionsSignalDetector:
                 "1h": prices_1h,
                 "daily": prices_daily,
                 # Include DataFrames for candlestick pattern detection
-                "df_1m": df_1m,
-                "df_15m": df_15m,
-                "df_1h": df_1h,
-                "df_daily": df_daily
+                "df_1m": df_1m if df_1m is not None else pd.DataFrame(),
+                "df_15m": df_15m if df_15m is not None else pd.DataFrame(),
+                "df_1h": df_1h if df_1h is not None else pd.DataFrame(),
+                "df_daily": df_daily if df_daily is not None else pd.DataFrame()
             }
 
         except Exception as e:
-            logger.error(f"Error getting price history for {symbol}: {e}")
+            logger.error(f"Error getting price history from Massive API for {symbol}: {e}")
+            return None
+
+    def _fetch_massive_bars(self, base_url: str, api_key: str, symbol: str,
+                           multiplier: str, timespan: str, limit: int) -> Optional[pd.DataFrame]:
+        """
+        Fetch aggregate bars from Massive API
+
+        Args:
+            base_url: Massive API base URL
+            api_key: API key
+            symbol: Stock symbol
+            multiplier: Time multiplier (e.g., '1', '15')
+            timespan: Timespan unit ('minute', 'hour', 'day')
+            limit: Number of bars to fetch
+
+        Returns:
+            DataFrame with OHLCV data or None
+        """
+        try:
+            # Calculate date range
+            today = datetime.now()
+            if timespan == 'minute':
+                from_date = (today - timedelta(days=2)).strftime('%Y-%m-%d')
+            elif timespan == 'hour':
+                from_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+            else:  # day
+                from_date = (today - timedelta(days=180)).strftime('%Y-%m-%d')
+
+            to_date = today.strftime('%Y-%m-%d')
+
+            url = f"{base_url}/v2/aggs/ticker/{symbol}/range/{multiplier}/{timespan}/{from_date}/{to_date}"
+
+            params = {
+                'adjusted': 'true',
+                'sort': 'desc',
+                'limit': limit,
+                'apiKey': api_key
+            }
+
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if data.get('resultsCount', 0) == 0:
+                logger.debug(f"No {multiplier}{timespan} data for {symbol}")
+                return None
+
+            results = data.get('results', [])
+            if not results:
+                return None
+
+            # Convert to DataFrame (Massive API format: o, h, l, c, v, t)
+            df = pd.DataFrame(results)
+            df = df[['o', 'h', 'l', 'c', 'v']]  # open, high, low, close, volume
+            df.columns = ['open', 'high', 'low', 'close', 'volume']
+
+            # Reverse to chronological order
+            df = df.iloc[::-1].reset_index(drop=True)
+
+            return df
+
+        except Exception as e:
+            logger.debug(f"Error fetching {multiplier}{timespan} bars for {symbol}: {e}")
             return None
 
     def _detect_candlestick_patterns(self, price_history: dict) -> List:

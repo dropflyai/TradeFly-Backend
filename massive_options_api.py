@@ -155,7 +155,7 @@ class MassiveOptionsAPI:
     ) -> List[OptionContract]:
         """
         Get liquid options suitable for trading
-        AUTOMATICALLY falls back to yfinance if Massive returns no data
+        100% Massive API - NO Yahoo Finance fallback
 
         Args:
             symbol: Stock symbol
@@ -165,15 +165,8 @@ class MassiveOptionsAPI:
         Returns:
             List of liquid OptionContract objects
         """
-        # Try Massive/Polygon first
+        # Get contracts from Massive API ONLY
         all_contracts = self.get_option_snapshot(symbol)
-
-        # FALLBACK: If no contracts or all zeros, use yfinance
-        valid_contracts = [c for c in all_contracts if c.pricing.mark > 0]
-
-        if not valid_contracts:
-            logger.warning(f"⚠️  Massive returned no valid data for {symbol}, using yfinance fallback")
-            all_contracts = self.get_options_chain_yfinance(symbol, max_days_to_exp=45)
 
         # Filter for liquidity
         liquid_contracts = []
@@ -182,17 +175,18 @@ class MassiveOptionsAPI:
             if contract.pricing.mark <= 0:
                 continue
 
-            # Filter by volume (be more lenient with yfinance data)
+            # RELAXED FILTERS: Lower thresholds to get MORE signals
+            # Filter by volume - accept ANY volume >= min_volume
             if contract.volume_metrics.volume < min_volume:
                 continue
 
-            # Filter by spread
+            # Filter by spread - very generous for affordable options
             if contract.pricing.spread_percent > max_spread_percent:
                 continue
 
             liquid_contracts.append(contract)
 
-        logger.info(f"Found {len(liquid_contracts)} liquid contracts for {symbol}")
+        logger.info(f"Found {len(liquid_contracts)} liquid contracts for {symbol} (min_volume={min_volume}, max_spread={max_spread_percent}%)")
         return liquid_contracts
 
     def get_high_iv_options(

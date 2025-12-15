@@ -2,13 +2,12 @@
 Top Market Movers Scanner
 Dynamically identifies stocks with significant movement for options scanning
 
-Uses Massive API (formerly Polygon.io) to get ALL optionable stocks
-Then filters by daily volume and % change to find the best opportunities
+Uses Massive API for ALL stock data - real-time snapshots and historical data
+100% Massive API - NO Yahoo Finance dependencies
 """
 import logging
 from typing import List, Dict
 from datetime import datetime, timedelta
-import yfinance as yf
 import pandas as pd
 import os
 import requests
