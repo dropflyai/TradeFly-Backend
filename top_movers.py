@@ -155,15 +155,35 @@ class TopMoversScanner:
 
     def _get_market_snapshots(self, tickers: List[str], max_stocks: int = 1000) -> List[Dict]:
         """
-        Get current day snapshots for ALL tickers using Massive API
-        Uses grouped daily bars (included in all Massive subscriptions)
-        Returns stocks with volume and % change data
+        Get REAL-TIME market snapshots using Stock Advanced plan
+        Uses Massive API's snapshot endpoint for intraday data during market hours
+        Falls back to daily aggregates when market is closed
         """
         movers = []
+        now = datetime.now()
 
+        # Market hours: 9:30 AM - 4:00 PM ET (Monday-Friday)
+        # During market hours, use REAL-TIME snapshots from Stock Advanced
+        market_open_hour = 9
+        market_open_minute = 30
+        market_close_hour = 16
+
+        is_market_hours = (
+            now.weekday() < 5 and  # Monday-Friday
+            (now.hour > market_open_hour or (now.hour == market_open_hour and now.minute >= market_open_minute)) and
+            now.hour < market_close_hour
+        )
+
+        if is_market_hours:
+            logger.info("📊 MARKET IS OPEN - Using REAL-TIME Stock Advanced snapshots!")
+            movers = self._get_realtime_snapshots(tickers, max_stocks)
+            if movers:
+                return movers
+            logger.warning("⚠️  Real-time snapshots failed, falling back to daily aggregates...")
+
+        # Market closed or real-time failed - use daily aggregates (end-of-day data)
         try:
-            # Use grouped daily bars - THIS WORKS with basic Massive API subscription!
-            # This gets ALL US stocks in a single call
+            # Use grouped daily bars for after-hours or when real-time fails
             today = datetime.now().strftime('%Y-%m-%d')
             url = f"https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks/{today}"
 
@@ -172,7 +192,7 @@ class TopMoversScanner:
                 'apiKey': self.api_key
             }
 
-            logger.info(f"📡 Fetching today's market data for all stocks from Massive API...")
+            logger.info(f"📡 Fetching daily aggregates from Massive API...")
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
 
@@ -257,55 +277,74 @@ class TopMoversScanner:
 
         except Exception as e2:
             logger.error(f"❌ Error getting yesterday's data: {e2}")
-            logger.warning("⚠️  Falling back to yfinance batch processing...")
 
-        # Final fallback to yfinance - but limit to top 500 to avoid timeout
-        return self._get_yfinance_snapshots(tickers[:500], 500)
+        return movers
 
-    def _get_yfinance_snapshots(self, tickers: List[str], max_stocks: int = 1000) -> List[Dict]:
+    def _get_realtime_snapshots(self, tickers: List[str], max_stocks: int = 1000) -> List[Dict]:
         """
-        Fallback method using yfinance for batch quotes
-        Slower but reliable when Massive API is unavailable
+        Get REAL-TIME snapshots using Stock Advanced plan
+        This provides live intraday prices and % changes during market hours
+
+        Uses Massive API's /v2/snapshot/locale/us/markets/stocks/tickers endpoint
+        Included in Stock Advanced plan ($199/month)
         """
         movers = []
 
         try:
-            # Process in batches of 100
+            # Stock Advanced allows batch snapshot requests
+            # Process in batches of 100 tickers per request
             batch_size = 100
+
             for i in range(0, min(len(tickers), max_stocks), batch_size):
-                batch = tickers[i:i+batch_size]
-                batch_str = ' '.join(batch)
+                batch_tickers = tickers[i:i+batch_size]
+                ticker_list = ','.join(batch_tickers)
 
-                try:
-                    # Download batch data
-                    data = yf.download(batch_str, period='1d', interval='1d', progress=False)
+                url = f"https://api.massive.com/v2/snapshot/locale/us/markets/stocks/tickers"
 
-                    if not data.empty:
-                        for ticker in batch:
-                            try:
-                                ticker_obj = yf.Ticker(ticker)
-                                info = ticker_obj.info
+                params = {
+                    'tickers': ticker_list,
+                    'apiKey': self.api_key
+                }
 
-                                change_pct = info.get('regularMarketChangePercent', 0)
-                                volume = info.get('volume', 0)
+                logger.info(f"📡 Fetching REAL-TIME snapshots for {len(batch_tickers)} stocks (batch {i//batch_size + 1})...")
+                response = requests.get(url, params=params, timeout=15)
+                response.raise_for_status()
 
-                                if change_pct and volume > 10000:
-                                    movers.append({
-                                        "symbol": ticker,
-                                        "change_percent": float(change_pct),
-                                        "volume": volume
-                                    })
-                            except Exception:
-                                continue
+                data = response.json()
 
-                except Exception as e:
-                    logger.debug(f"Error processing batch: {e}")
-                    continue
+                if data.get('status') == 'OK' and 'tickers' in data:
+                    for ticker_data in data['tickers']:
+                        ticker = ticker_data.get('ticker')
+
+                        # Get real-time data from snapshot
+                        day_data = ticker_data.get('day', {})
+                        prev_day = ticker_data.get('prevDay', {})
+
+                        # Current price and volume
+                        current_price = day_data.get('c', 0)  # Current close
+                        open_price = day_data.get('o', 0)      # Today's open
+                        volume = day_data.get('v', 0)          # Current volume
+
+                        # Calculate REAL-TIME % change from today's open
+                        if open_price and current_price and volume > 10000:
+                            change_pct = ((current_price - open_price) / open_price) * 100
+
+                            movers.append({
+                                "symbol": ticker,
+                                "change_percent": float(change_pct),
+                                "volume": int(volume),
+                                "price": float(current_price)
+                            })
+
+                logger.info(f"  ✅ Retrieved {len(movers)} real-time movers so far...")
+
+            logger.info(f"🎯 Stock Advanced REAL-TIME SCAN: Found {len(movers)} stocks with movement")
+            return movers[:max_stocks]
 
         except Exception as e:
-            logger.error(f"Error getting yfinance snapshots: {e}")
+            logger.error(f"❌ Error getting real-time snapshots from Stock Advanced: {e}")
+            return []
 
-        return movers
 
     def _get_comprehensive_fallback_list(self) -> List[str]:
         """

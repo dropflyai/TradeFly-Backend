@@ -8,11 +8,13 @@ This is the CORE ENGINE that:
 3. Calculates technical indicators
 4. Applies risk management
 5. Generates actionable trading signals
+6. Detects candlestick patterns for entry/exit signals
 """
 import logging
 from typing import List, Optional
 from datetime import datetime
 import numpy as np
+import pandas as pd
 import yfinance as yf
 
 from options_models import (
@@ -34,6 +36,7 @@ from swing_trading_strategy import SwingTradingStrategy, SwingSignal
 from massive_options_api import MassiveOptionsAPI
 from technical_analysis import TechnicalAnalysis
 from market_data_polygon import PolygonMarketDataService
+from candlestick_patterns import CandlestickPatternDetector, PatternType, Signal
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +63,9 @@ class OptionsSignalDetector:
         self.account_balance = account_balance
         self.risk_manager = RiskManager()
         self.ta = TechnicalAnalysis()
+        self.pattern_detector = CandlestickPatternDetector()
 
-        logger.info("Options Signal Detector initialized")
+        logger.info("Options Signal Detector initialized with candlestick pattern recognition")
 
     def scan_for_signals(
         self,
@@ -143,29 +147,52 @@ class OptionsSignalDetector:
         """
         signals = []
 
+        # Detect candlestick patterns for entry confirmation
+        candlestick_patterns = self._detect_candlestick_patterns(price_history)
+
+        # Store patterns for later use in signal enhancement
+        price_history['candlestick_patterns'] = candlestick_patterns
+
         # Run scalping strategy
         if StrategyType.SCALPING in strategies:
             scalp_signal = self._detect_scalp(contract, price_history)
             if scalp_signal:
-                signals.append(self._convert_to_unified_signal(scalp_signal, contract))
+                # Enhance with candlestick patterns
+                enhanced_signal = self._enhance_signal_with_patterns(
+                    self._convert_to_unified_signal(scalp_signal, contract),
+                    candlestick_patterns
+                )
+                signals.append(enhanced_signal)
 
         # Run swing trading strategy
         if StrategyType.SWING in strategies:
             swing_signal = self._detect_swing(contract, price_history)
             if swing_signal:
-                signals.append(self._convert_to_unified_signal(swing_signal, contract))
+                enhanced_signal = self._enhance_signal_with_patterns(
+                    self._convert_to_unified_signal(swing_signal, contract),
+                    candlestick_patterns
+                )
+                signals.append(enhanced_signal)
 
         # Run momentum strategy
         if StrategyType.MOMENTUM in strategies:
             momentum_signal = self._detect_momentum(contract, price_history)
             if momentum_signal:
-                signals.append(self._convert_to_unified_signal(momentum_signal, contract))
+                enhanced_signal = self._enhance_signal_with_patterns(
+                    self._convert_to_unified_signal(momentum_signal, contract),
+                    candlestick_patterns
+                )
+                signals.append(enhanced_signal)
 
         # Run volume spike strategy
         if StrategyType.VOLUME_SPIKE in strategies:
             volume_signal = self._detect_volume_spike(contract, price_history)
             if volume_signal:
-                signals.append(self._convert_to_unified_signal(volume_signal, contract))
+                enhanced_signal = self._enhance_signal_with_patterns(
+                    self._convert_to_unified_signal(volume_signal, contract),
+                    candlestick_patterns
+                )
+                signals.append(enhanced_signal)
 
         return signals
 
@@ -409,7 +436,7 @@ class OptionsSignalDetector:
             symbol: Stock symbol
 
         Returns:
-            Dictionary with price arrays for different timeframes
+            Dictionary with price arrays and DataFrames for different timeframes
         """
         try:
             # Fetch real intraday data from yfinance (FREE)
@@ -424,7 +451,7 @@ class OptionsSignalDetector:
             # Get 1-hour bars for swing trading
             df_1h = ticker.history(period='1mo', interval='1h')
 
-            # Get daily bars for swing trading
+            # Get daily bars for swing trading and candlestick patterns
             df_daily = ticker.history(period='3mo', interval='1d')
 
             if df_1m.empty:
@@ -445,12 +472,134 @@ class OptionsSignalDetector:
                 "15m": prices_15m,
                 "15m_volume": volumes_15m,
                 "1h": prices_1h,
-                "daily": prices_daily
+                "daily": prices_daily,
+                # Include DataFrames for candlestick pattern detection
+                "df_1m": df_1m,
+                "df_15m": df_15m,
+                "df_1h": df_1h,
+                "df_daily": df_daily
             }
 
         except Exception as e:
             logger.error(f"Error getting price history for {symbol}: {e}")
             return None
+
+    def _detect_candlestick_patterns(self, price_history: dict) -> List:
+        """
+        Detect candlestick patterns across all timeframes
+
+        Args:
+            price_history: Dictionary with DataFrames for different timeframes
+
+        Returns:
+            List of detected candlestick patterns
+        """
+        all_patterns = []
+
+        try:
+            # Check daily timeframe for swing patterns
+            df_daily = price_history.get('df_daily')
+            if df_daily is not None and len(df_daily) >= 10:
+                patterns_daily = self.pattern_detector.detect_patterns(df_daily)
+                for pattern in patterns_daily:
+                    pattern.timeframe = 'daily'  # Add timeframe info
+                all_patterns.extend(patterns_daily)
+                if patterns_daily:
+                    logger.info(f"Found {len(patterns_daily)} candlestick patterns on daily chart")
+
+            # Check 1-hour timeframe for swing/momentum patterns
+            df_1h = price_history.get('df_1h')
+            if df_1h is not None and len(df_1h) >= 10:
+                patterns_1h = self.pattern_detector.detect_patterns(df_1h)
+                for pattern in patterns_1h:
+                    pattern.timeframe = '1h'
+                all_patterns.extend(patterns_1h)
+                if patterns_1h:
+                    logger.info(f"Found {len(patterns_1h)} candlestick patterns on 1h chart")
+
+            # Check 15-minute timeframe for scalp/momentum patterns
+            df_15m = price_history.get('df_15m')
+            if df_15m is not None and len(df_15m) >= 10:
+                patterns_15m = self.pattern_detector.detect_patterns(df_15m)
+                for pattern in patterns_15m:
+                    pattern.timeframe = '15m'
+                all_patterns.extend(patterns_15m)
+                if patterns_15m:
+                    logger.info(f"Found {len(patterns_15m)} candlestick patterns on 15m chart")
+
+        except Exception as e:
+            logger.error(f"Error detecting candlestick patterns: {e}")
+
+        return all_patterns
+
+    def _enhance_signal_with_patterns(
+        self,
+        signal: OptionsSignal,
+        patterns: List
+    ) -> OptionsSignal:
+        """
+        Enhance trading signal with candlestick pattern information
+
+        Args:
+            signal: Original trading signal
+            patterns: List of detected candlestick patterns
+
+        Returns:
+            Enhanced signal with pattern confirmation
+        """
+        if not patterns:
+            return signal
+
+        # Filter patterns by timeframe relevance
+        relevant_patterns = []
+
+        if signal.strategy == StrategyType.SCALPING:
+            # Scalping: Focus on 15m patterns
+            relevant_patterns = [p for p in patterns if hasattr(p, 'timeframe') and p.timeframe == '15m']
+        elif signal.strategy == StrategyType.SWING:
+            # Swing: Focus on daily and 1h patterns
+            relevant_patterns = [p for p in patterns if hasattr(p, 'timeframe') and p.timeframe in ['daily', '1h']]
+        elif signal.strategy == StrategyType.MOMENTUM:
+            # Momentum: Use 1h and 15m patterns
+            relevant_patterns = [p for p in patterns if hasattr(p, 'timeframe') and p.timeframe in ['1h', '15m']]
+        else:
+            # Volume spike: Use all patterns
+            relevant_patterns = patterns
+
+        if not relevant_patterns:
+            return signal
+
+        # Find the strongest pattern (highest confidence)
+        strongest_pattern = max(relevant_patterns, key=lambda p: p.confidence)
+
+        # Check if pattern confirms signal direction
+        pattern_confirms = (
+            (strongest_pattern.signal == Signal.BULLISH and signal.action.lower() == 'buy') or
+            (strongest_pattern.signal == Signal.BEARISH and signal.action.lower() == 'sell')
+        )
+
+        if pattern_confirms:
+            # Boost confidence by pattern confirmation
+            confidence_boost = strongest_pattern.confidence * 0.1  # Up to 10% boost
+            signal.confidence = min(1.0, signal.confidence + confidence_boost)
+
+            # Update reasoning with pattern info
+            pattern_desc = f"{strongest_pattern.pattern_type.value.replace('_', ' ').title()} ({strongest_pattern.timeframe})"
+            signal.reasoning += f" | Confirmed by {pattern_desc} pattern (confidence: {strongest_pattern.confidence:.2f})"
+
+            # Update target/stop if pattern provides better levels
+            if strongest_pattern.target_price and strongest_pattern.target_price > signal.entry_price:
+                signal.target_price = strongest_pattern.target_price
+            if strongest_pattern.stop_loss:
+                signal.stop_loss = strongest_pattern.stop_loss
+
+            logger.info(f"Signal enhanced with {pattern_desc} pattern, confidence now {signal.confidence:.2f}")
+        else:
+            # Pattern contradicts signal - reduce confidence
+            signal.confidence = max(0.5, signal.confidence - 0.1)
+            logger.warning(f"Pattern {strongest_pattern.pattern_type.value} contradicts signal direction")
+
+        return signal
 
     def _simulate_block_trades(self, contract: OptionContract) -> List[dict]:
         """
