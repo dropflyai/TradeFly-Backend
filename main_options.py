@@ -24,6 +24,7 @@ from position_tracker import PositionTracker, ExitSignal, ExitReason
 from market_hours import MarketHours
 from top_movers import TopMoversScanner
 from supabase_client import get_db
+from market_status import init_market_status, get_market_status
 
 # Load environment variables
 load_dotenv()
@@ -105,6 +106,10 @@ async def lifespan(app: FastAPI):
     # Initialize Massive Options API
     massive_api_key = os.getenv("MASSIVE_API_KEY")
     if massive_api_key:
+        # Initialize market status verification FIRST
+        init_market_status(massive_api_key)
+        logger.info("✅ Market status verification initialized")
+
         options_api = MassiveOptionsAPI(massive_api_key)
 
         # Initialize signal detector
@@ -160,19 +165,44 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "engines": {
             "options_api": options_api is not None,
-            "market_data": market_data_api is not None,
-            "signal_detector": signal_detector is not None
+            "signal_detector": signal_detector is not None,
+            "market_status": get_market_status() is not None
         }
     }
 
 
-@app.get("/api/market/status")
-async def get_market_status():
+@app.get("/api/system/time-check")
+async def system_time_check():
     """
-    Get live market status and trading hours
+    VERIFIED system time and market status check
+    Uses Massive API to confirm real-time market status and Eastern Time
+    """
+    market_status_service = get_market_status()
 
-    Returns:
-        Market status with current time, session info, and trading hours
+    if not market_status_service:
+        return {
+            "error": "Market status service not initialized",
+            "status": "unknown"
+        }
+
+    status = market_status_service.get_current_status()
+
+    return {
+        "verified_market_time": status.get('server_time_str'),
+        "market_status": status.get('market'),
+        "is_market_open": status.get('is_open'),
+        "is_pre_market": status.get('is_pre_market'),
+        "is_after_hours": status.get('is_after_hours'),
+        "exchanges": status.get('exchanges'),
+        "summary": market_status_service.get_status_summary()
+    }
+
+
+@app.get("/api/market/status")
+async def get_old_market_status():
+    """
+    DEPRECATED: Use /api/system/time-check instead
+    Old market status endpoint (manual calculation)
     """
     return MarketHours.get_market_status()
 

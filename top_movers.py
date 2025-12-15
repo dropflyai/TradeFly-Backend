@@ -13,6 +13,7 @@ import pandas as pd
 import os
 import requests
 from supabase_client import get_db
+from market_status import get_market_status
 
 logger = logging.getLogger(__name__)
 
@@ -160,26 +161,28 @@ class TopMoversScanner:
         Falls back to daily aggregates when market is closed
         """
         movers = []
-        now = datetime.now()
 
-        # Market hours: 9:30 AM - 4:00 PM ET (Monday-Friday)
-        # During market hours, use REAL-TIME snapshots from Stock Advanced
-        market_open_hour = 9
-        market_open_minute = 30
-        market_close_hour = 16
+        # Get VERIFIED market status from Massive API (handles holidays, early closes, etc.)
+        market_status_service = get_market_status()
 
-        is_market_hours = (
-            now.weekday() < 5 and  # Monday-Friday
-            (now.hour > market_open_hour or (now.hour == market_open_hour and now.minute >= market_open_minute)) and
-            now.hour < market_close_hour
-        )
+        if market_status_service:
+            status = market_status_service.get_current_status()
+            is_market_open = status.get('is_open', False)
+            market_time = status.get('server_time_str', 'Unknown')
 
-        if is_market_hours:
-            logger.info("📊 MARKET IS OPEN - Using REAL-TIME Stock Advanced snapshots!")
-            movers = self._get_realtime_snapshots(tickers, max_stocks)
-            if movers:
-                return movers
-            logger.warning("⚠️  Real-time snapshots failed, falling back to daily aggregates...")
+            logger.info(f"🕐 VERIFIED MARKET TIME: {market_time}")
+            logger.info(f"📊 VERIFIED MARKET STATUS: {status.get('market', 'unknown').upper()}")
+
+            if is_market_open:
+                logger.info("✅ MARKET IS OPEN - Using REAL-TIME Stock Advanced snapshots!")
+                movers = self._get_realtime_snapshots(tickers, max_stocks)
+                if movers:
+                    return movers
+                logger.warning("⚠️  Real-time snapshots failed, falling back to daily aggregates...")
+            else:
+                logger.info(f"🔒 MARKET IS {status.get('market', 'CLOSED').upper()} - Using daily aggregates")
+        else:
+            logger.warning("⚠️  Market status service not initialized, using daily aggregates")
 
         # Market closed or real-time failed - use daily aggregates (end-of-day data)
         try:
