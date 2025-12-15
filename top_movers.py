@@ -27,8 +27,9 @@ class TopMoversScanner:
     def __init__(self):
         self.last_update = None
         self.cache_ttl = 300  # 5 minutes
-        self.cached_movers = []
-        self.api_key = os.getenv('POLYGON_API_KEY')  # Massive API uses same env var
+        self.cached_movers = []  # List of symbols
+        self.cached_movers_data = []  # Full data with prices, volume, etc.
+        self.api_key = os.getenv('MASSIVE_API_KEY')
 
         # Cache for all optionable tickers (updated daily)
         self.all_optionable_tickers = []
@@ -84,6 +85,7 @@ class TopMoversScanner:
 
         # Update cache
         self.cached_movers = symbols
+        self.cached_movers_data = sorted_movers[:max_stocks]  # Cache full data
         self.last_update = datetime.now()
 
         # Save to Supabase database
@@ -714,22 +716,9 @@ class TopMoversScanner:
         Returns:
             List of dicts with symbol, price, change, volume
         """
-        movers = []
+        # Ensure we have cached movers - trigger scan if needed
+        if not self.cached_movers_data:
+            self.get_dynamic_watchlist()
 
-        for symbol in self.cached_movers[:20]:  # Top 20 for display
-            try:
-                ticker = yf.Ticker(symbol)
-                info = ticker.info
-
-                movers.append({
-                    "symbol": symbol,
-                    "price": info.get("currentPrice") or info.get("regularMarketPrice", 0),
-                    "change_percent": info.get("regularMarketChangePercent", 0),
-                    "volume": info.get("volume", 0),
-                    "market_cap": info.get("marketCap", 0)
-                })
-            except Exception as e:
-                logger.debug(f"Error getting info for {symbol}: {e}")
-                continue
-
-        return movers
+        # Return cached data from Massive API (no Yahoo Finance calls needed)
+        return self.cached_movers_data[:20]  # Top 20 for display

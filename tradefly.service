@@ -7,7 +7,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/var/www/tradefly
 Environment="PATH=/var/www/tradefly/venv/bin"
-Environment="POLYGON_API_KEY=3LJuAPplRFEeAlnMDHkmFVK93hcxEftF"
+Environment="MASSIVE_API_KEY=W7th2amm_Fgyp9sIGyEqi5ZrPsTzR1um"
 Environment="SUPABASE_URL=https://nplgxhthjwwyywbnvxzt.supabase.co"
 Environment="SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbGd4aHRoand3eXl3Ym52eHp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE5MjE3MSwiZXhwIjoyMDc5NzY4MTcxfQ.qGhvTBRJ1Q49JvCOQ5Gb5IciFhsNFzEiEYQQ5wDZj9I"
 Environment="PORT=8002"

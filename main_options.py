@@ -105,7 +105,7 @@ async def lifespan(app: FastAPI):
     logger.info("✅ Top movers scanner initialized")
 
     # Initialize Massive Options API
-    massive_api_key = os.getenv("POLYGON_API_KEY")  # Same key works for options
+    massive_api_key = os.getenv("MASSIVE_API_KEY")
     if massive_api_key:
         options_api = MassiveOptionsAPI(massive_api_key)
         market_data_api = PolygonMarketDataService(massive_api_key)
@@ -119,7 +119,7 @@ async def lifespan(app: FastAPI):
 
         logger.info("✅ Options trading engine initialized")
     else:
-        logger.error("❌ POLYGON_API_KEY not found - options trading disabled")
+        logger.error("❌ MASSIVE_API_KEY not found - options trading disabled")
 
     yield
 
@@ -1496,5 +1496,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         reload=True,
-        log_level="info"
+        log_level="info",
+        timeout_keep_alive=600  # Allow long-running market scans (10 minutes)
     )

@@ -38,7 +38,7 @@ class MassiveOptionsAPI:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = "https://api.massive.com"
-        logger.info("Massive Options API initialized (Options Advanced)")
+        logger.info("Massive Options API initialized")
 
     def get_options_chain(
         self,
