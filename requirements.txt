@@ -20,6 +20,9 @@ scipy==1.11.4
 # Database
 supabase==2.0.3
 
+# Social Platform (Pydantic email validation)
+email-validator==2.1.0
+
 # Reliability Infrastructure (NEW)
 redis==5.0.1
 tenacity==8.2.3

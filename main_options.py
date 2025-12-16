@@ -169,6 +169,10 @@ app.add_middleware(
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Include Social API routes
+from social_api import router as social_router
+app.include_router(social_router)
+
 
 @app.get("/")
 async def root():
