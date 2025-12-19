@@ -9,6 +9,7 @@ import logging
 from typing import Optional, List
 from datetime import datetime
 import numpy as np
+import pytz
 
 from options_models import (
     OptionContract,
@@ -22,6 +23,58 @@ from technical_analysis import TechnicalAnalysis
 from improved_filters import ImprovedFilters
 
 logger = logging.getLogger(__name__)
+
+
+class TimeOfDayFilter:
+    """
+    Time-of-day filtering based on institutional edge windows
+
+    Research shows first 60-90 minutes after market open contains
+    60% of daily price range and highest institutional activity.
+    """
+
+    @staticmethod
+    def is_high_edge_window() -> bool:
+        """
+        Check if current time is in high-probability trading window
+
+        High Edge Windows:
+        - Market Open: 9:30-11:00 AM ET (first 90 minutes)
+        - Power Hour: 3:00-4:00 PM ET (last hour)
+
+        Returns:
+            True if in high edge window, False otherwise
+        """
+        et = pytz.timezone('America/New_York')
+        now_et = datetime.now(et)
+        current_time = now_et.time()
+
+        # Market open window: 9:30-11:00 AM ET
+        morning_start = datetime.strptime("09:30", "%H:%M").time()
+        morning_end = datetime.strptime("11:00", "%H:%M").time()
+
+        # Power hour: 3:00-4:00 PM ET
+        power_start = datetime.strptime("15:00", "%H:%M").time()
+        power_end = datetime.strptime("16:00", "%H:%M").time()
+
+        in_morning_window = morning_start <= current_time <= morning_end
+        in_power_hour = power_start <= current_time <= power_end
+
+        return in_morning_window or in_power_hour
+
+    @staticmethod
+    def get_current_session() -> str:
+        """Get current trading session name for logging"""
+        et = pytz.timezone('America/New_York')
+        now_et = datetime.now(et)
+        current_time = now_et.time()
+
+        if datetime.strptime("09:30", "%H:%M").time() <= current_time <= datetime.strptime("11:00", "%H:%M").time():
+            return "MORNING_MOMENTUM"
+        elif datetime.strptime("15:00", "%H:%M").time() <= current_time <= datetime.strptime("16:00", "%H:%M").time():
+            return "POWER_HOUR"
+        else:
+            return "MID_DAY"
 
 
 class ScalpingStrategy:
@@ -43,11 +96,12 @@ class ScalpingStrategy:
         Detect scalping opportunities
 
         Criteria (institutional-grade):
-        1. Bid-ask spread < $0.10 (tight spreads only)
-        2. Volume > 1000 contracts (high liquidity)
-        3. Delta: 0.40-0.70 for calls, -0.40 to -0.70 for puts
-        4. Price momentum: 3%+ move in 1-5 minutes
-        5. RSI: 30-40 (oversold) for longs, 60-70 (overbought) for shorts
+        1. Time: Must be in high-edge window (9:30-11AM or 3-4PM ET)
+        2. Bid-ask spread < $0.10 (tight spreads only)
+        3. Volume > 1000 contracts (high liquidity)
+        4. Delta: 0.40-0.70 for calls, -0.40 to -0.70 for puts
+        5. Price momentum: 3%+ move in 1-5 minutes
+        6. RSI: 30-40 (oversold) for longs, 60-70 (overbought) for shorts
 
         Args:
             contract: Option contract with current data
@@ -59,28 +113,33 @@ class ScalpingStrategy:
         """
         ta = TechnicalAnalysis()
 
+        # FILTER 0: Time-of-day - Only trade during high-edge windows
+        if not TimeOfDayFilter.is_high_edge_window():
+            session = TimeOfDayFilter.get_current_session()
+            logger.debug(f"{contract.symbol}: Outside high-edge window (current: {session})")
+            return None
+
         # FILTER 1: Liquidity - Tight spreads only
         if not contract.pricing.is_liquid:
             logger.debug(f"{contract.symbol}: Spread too wide ${contract.pricing.spread:.2f}")
             return None
 
-        # FILTER 2: Volume - Lowered for early session testing
-        if contract.volume_metrics.volume < 10:  # Lowered from 1000 for early session
+        # FILTER 2: Volume - PRODUCTION: High liquidity required
+        if contract.volume_metrics.volume < 1000:  # Institutional-grade: 1000+ contracts
             logger.debug(f"{contract.symbol}: Volume too low {contract.volume_metrics.volume}")
             return None
 
-        # FILTER 3: Delta range - VERY RELAXED for study mode
-        # Accept almost all deltas (0.20-0.99) to track live opportunities
-        # Real traders DO trade deep ITM options for momentum plays
+        # FILTER 3: Delta range - PRODUCTION: Sweet spot for liquid scalps
+        # Target options with moderate delta for optimal risk/reward
         delta = abs(contract.greeks.delta)
-        if not (0.20 <= delta <= 0.99):  # Accept deep ITM for momentum
-            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.20-0.99)")
+        if not (0.40 <= delta <= 0.70):  # Institutional sweet spot
+            logger.debug(f"{contract.symbol}: Delta {delta:.2f} outside range (want 0.40-0.70)")
             return None
 
-        # FILTER 3B: Price affordability - RELAXED for study mode
-        # Allow up to $50/share to track more expensive stocks (NVDA, TSLA, etc.)
-        if contract.pricing.ask > 50.0:  # Raised from $10 to track high-value stocks
-            logger.debug(f"{contract.symbol}: Too expensive ${contract.pricing.ask:.2f}/share (want under $50)")
+        # FILTER 3B: Price affordability - PRODUCTION: Focus on liquid, affordable options
+        # Lower price = higher liquidity, tighter spreads, better fills
+        if contract.pricing.ask > 10.0:  # Sweet spot: under $10
+            logger.debug(f"{contract.symbol}: Too expensive ${contract.pricing.ask:.2f}/share (want under $10)")
             return None
 
         # FILTER 4: Momentum calculation
@@ -91,22 +150,24 @@ class ScalpingStrategy:
         price_momentum_1m = ta.momentum(price_history_1m, period=1)
         price_momentum_5m = ta.momentum(price_history_1m, period=5) if len(price_history_1m) >= 6 else 0
 
-        # STUDY MODE: Accept ANY momentum to track all live data
-        # In production, you'd want stricter filters, but for development we want to see what's happening
+        # PRODUCTION: Require significant momentum for scalps (3%+ minimum)
         momentum = price_momentum_1m if abs(price_momentum_1m) > abs(price_momentum_5m) else price_momentum_5m
 
-        # === IMPROVED QUALITY FILTERS - DISABLED FOR STUDY MODE ===
-        # In production, enable these for stricter quality control
-        # passes_filters, failure_reasons = ImprovedFilters.apply_all_filters(contract, price_momentum_1m)
-        # if not passes_filters:
-        #     logger.debug(f"{contract.symbol}: REJECTED by quality filters: {', '.join(failure_reasons)}")
-        #     return None
+        if abs(momentum) < 0.03:  # 3% minimum move required
+            logger.debug(f"{contract.symbol}: Momentum {momentum:.2%} too weak (need 3%+)")
+            return None
+
+        # === PRODUCTION QUALITY FILTERS - ENABLED ===
+        passes_filters, failure_reasons = ImprovedFilters.apply_all_filters(contract, price_momentum_1m)
+        if not passes_filters:
+            logger.debug(f"{contract.symbol}: REJECTED by quality filters: {', '.join(failure_reasons)}")
+            return None
 
         # FILTER 5: RSI for entry timing
         rsi = ta.rsi(price_history_1m, period=14)
 
-        # BULLISH SCALP: Upward momentum + RSI oversold (lowered for quiet market)
-        if price_momentum_1m > 0.001 and 20 <= rsi <= 50:  # Much more permissive
+        # BULLISH SCALP: Upward momentum + RSI oversold - PRODUCTION thresholds
+        if price_momentum_1m > 0.03 and 30 <= rsi <= 40:  # Institutional oversold zone
             # Only generate CALL signals for bullish momentum
             if contract.greeks.delta > 0:  # CALL contract
                 return ScalpSignal(
@@ -119,8 +180,8 @@ class ScalpingStrategy:
                     reason=f"Scalp: {price_momentum_1m:.1%} momentum + RSI {rsi:.0f} oversold + {contract.volume_metrics.volume} vol"
                 )
 
-        # BEARISH SCALP: Downward momentum + RSI overbought (lowered for quiet market)
-        if price_momentum_1m < -0.001 and 50 <= rsi <= 80:  # Much more permissive
+        # BEARISH SCALP: Downward momentum + RSI overbought - PRODUCTION thresholds
+        if price_momentum_1m < -0.03 and 60 <= rsi <= 70:  # Institutional overbought zone
             # Only generate PUT signals for bearish momentum
             if contract.greeks.delta < 0:  # PUT contract
                 return ScalpSignal(
@@ -133,9 +194,9 @@ class ScalpingStrategy:
                     reason=f"Scalp: {price_momentum_1m:.1%} momentum + RSI {rsi:.0f} overbought + {contract.volume_metrics.volume} vol"
                 )
 
-        # MOMENTUM CONTINUATION: 5-minute move (lowered for quiet market)
-        if abs(price_momentum_5m) > 0.001:  # 0.1%+ move in 5 min (very permissive)
-            confidence = 0.75 if abs(price_momentum_5m) > 0.002 else 0.70
+        # MOMENTUM CONTINUATION: 5-minute move - PRODUCTION: Require strong momentum
+        if abs(price_momentum_5m) > 0.03:  # 3%+ move in 5 min (institutional threshold)
+            confidence = 0.80 if abs(price_momentum_5m) > 0.05 else 0.75  # Higher confidence for 5%+ moves
 
             # Match action to contract type AND momentum direction
             # Only generate signal if momentum aligns with contract type
@@ -179,11 +240,12 @@ class MomentumStrategy:
         Detect momentum breakout opportunities
 
         Criteria:
-        1. Underlying stock: 3%+ move in 15 minutes
-        2. Volume: 2x+ daily average
-        3. Options volume: 3x+ 30-day average
-        4. MACD crossover (bullish) or cross-under (bearish)
-        5. Breaking key resistance/support
+        1. Time: Preferably in high-edge windows
+        2. Underlying stock: 3%+ move in 15 minutes
+        3. Volume: 2x+ daily average
+        4. Options volume: 3x+ 30-day average
+        5. MACD crossover (bullish) or cross-under (bearish)
+        6. Breaking key resistance/support
 
         Args:
             contract: Option contract
@@ -194,6 +256,12 @@ class MomentumStrategy:
             MomentumSignal if detected, None otherwise
         """
         ta = TechnicalAnalysis()
+
+        # FILTER 0: Time-of-day - Preferably in high-edge windows (less strict for momentum)
+        if not TimeOfDayFilter.is_high_edge_window():
+            session = TimeOfDayFilter.get_current_session()
+            logger.debug(f"{contract.symbol}: Outside high-edge window (current: {session}) - momentum signals less reliable")
+            # Don't return None - momentum can happen anytime, just log warning
 
         # FILTER 1: Stock momentum (need 3%+ move)
         if len(price_history_15m) < 2:
@@ -320,14 +388,14 @@ class VolumeSpikeStrategy:
             logger.debug(f"{contract.symbol}: Volume ratio {contract.volume_metrics.volume_ratio:.1f}x insufficient for UOA")
             return None
 
-        # FILTER 2: Block trades detection (lowered for testing)
+        # FILTER 2: Block trades detection - PRODUCTION: Institutional-size only
         large_orders = [
             trade for trade in block_trades
-            if trade.get('size', 0) >= 50  # Lowered from 100 for testing
+            if trade.get('size', 0) >= 100  # 100+ contracts = institutional
         ]
 
-        if len(large_orders) < 1:  # Lowered from 3 for testing
-            logger.debug(f"{contract.symbol}: Only {len(large_orders)} block trades")
+        if len(large_orders) < 3:  # Need multiple blocks for confirmation
+            logger.debug(f"{contract.symbol}: Only {len(large_orders)} block trades (need 3+)")
             return None
 
         # FILTER 3: Calculate premium flow
@@ -336,9 +404,9 @@ class VolumeSpikeStrategy:
             block_trades
         )
 
-        # Lowered from $1M for early session testing
-        if abs(net_premium_flow) < 50_000:  # Lowered from 1M for testing
-            logger.debug(f"{contract.symbol}: Premium flow ${net_premium_flow:,.0f} too low")
+        # PRODUCTION: $1M+ premium flow indicates smart money
+        if abs(net_premium_flow) < 1_000_000:  # $1M minimum
+            logger.debug(f"{contract.symbol}: Premium flow ${net_premium_flow:,.0f} too low (need $1M+)")
             return None
 
         # Determine flow direction
@@ -521,3 +589,106 @@ class RiskManager:
         contracts = int(dollar_risk / risk_per_contract)
 
         return max(1, contracts)  # At least 1 contract
+
+    @staticmethod
+    def should_take_partial_profit(
+        entry_price: float,
+        current_price: float,
+        profit_target_multiplier: float = 2.0
+    ) -> tuple[bool, float]:
+        """
+        Najarians 50% Rule: Take 50% profit when position reaches 2x (100% gain)
+
+        This is a proven institutional tactic to:
+        1. Lock in guaranteed profits
+        2. Let remaining position run for bigger gains
+        3. Reduce psychological pressure
+
+        Args:
+            entry_price: Original entry price
+            current_price: Current market price
+            profit_target_multiplier: Target multiplier for partial profit (default 2.0 = 100% gain)
+
+        Returns:
+            Tuple of (should_take_profit, contracts_to_sell_percent)
+        """
+        if current_price >= entry_price * profit_target_multiplier:
+            return True, 0.50  # Sell 50% of position
+        return False, 0.0
+
+    @staticmethod
+    def calculate_trailing_stop(
+        entry_price: float,
+        current_price: float,
+        highest_price_since_entry: float,
+        trail_percent: float = 0.25
+    ) -> float:
+        """
+        Calculate trailing stop loss to protect profits
+
+        As position moves in your favor, stop loss trails behind to lock in gains.
+
+        Args:
+            entry_price: Original entry price
+            current_price: Current market price
+            highest_price_since_entry: Highest price reached since entry
+            trail_percent: Trailing stop percentage (default 25%)
+
+        Returns:
+            Trailing stop price
+        """
+        # Only trail if in profit
+        if highest_price_since_entry <= entry_price:
+            return entry_price * 0.95  # Original 5% stop
+
+        # Trail stop 25% below highest price
+        trailing_stop = highest_price_since_entry * (1 - trail_percent)
+
+        # Never lower the stop (only raise it)
+        original_stop = entry_price * 0.95
+        return max(trailing_stop, original_stop)
+
+    @staticmethod
+    def should_exit_position(
+        entry_price: float,
+        current_price: float,
+        stop_loss: float,
+        target_price: float,
+        time_in_position_minutes: int,
+        max_hold_time_minutes: int = 120
+    ) -> tuple[bool, str]:
+        """
+        Determine if position should be exited
+
+        Exit conditions:
+        1. Hit stop loss
+        2. Hit target price
+        3. Maximum hold time exceeded (prevent overnight risk)
+
+        Args:
+            entry_price: Entry price
+            current_price: Current price
+            stop_loss: Stop loss price
+            target_price: Target profit price
+            time_in_position_minutes: Minutes held
+            max_hold_time_minutes: Max time to hold (default 2 hours)
+
+        Returns:
+            Tuple of (should_exit, reason)
+        """
+        # Stop loss hit
+        if current_price <= stop_loss:
+            loss_pct = ((current_price - entry_price) / entry_price) * 100
+            return True, f"STOP LOSS: {loss_pct:.1f}% loss"
+
+        # Target hit
+        if current_price >= target_price:
+            profit_pct = ((current_price - entry_price) / entry_price) * 100
+            return True, f"TARGET HIT: {profit_pct:.1f}% profit"
+
+        # Max hold time
+        if time_in_position_minutes >= max_hold_time_minutes:
+            profit_pct = ((current_price - entry_price) / entry_price) * 100
+            return True, f"MAX HOLD TIME: {profit_pct:.1f}% profit/loss after {max_hold_time_minutes}min"
+
+        return False, "HOLD"
